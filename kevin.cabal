@@ -10,4 +10,4 @@ Cabal-Version:    >=1.2
 
 Executable kevin
     Main-is:          Kevin.hs
-    Build-Depends:    base >= 3 && < 5
+    Build-Depends:    base == 4.*, network == 2.3.*
