@@ -1,0 +1,13 @@
+Name:             kevin
+Version:          0.0
+Description:      a dAmn <-> IRC proxy
+License:          GPL
+License-file:     LICENSE
+Author:           Joel Taylor
+Maintainer:       barebonesgraphics@gmail.com
+Build-Type:       Simple
+Cabal-Version:    >=1.2
+
+Executable kevin
+    Main-is:          Kevin.hs
+    Build-Depends:    base >= 3 && < 5
