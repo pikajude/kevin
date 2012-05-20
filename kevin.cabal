@@ -1,13 +1,19 @@
 Name:             kevin
 Version:          0.0
+Synopsis:         a dAmn <-> IRC proxy
 Description:      a dAmn <-> IRC proxy
 License:          GPL
 License-file:     LICENSE
 Author:           Joel Taylor
 Maintainer:       barebonesgraphics@gmail.com
 Build-Type:       Simple
-Cabal-Version:    >=1.2
+Cabal-Version:    >=1.6
+Category:         Utils
+
+source-repository head
+    type: git
+    location: git://github.com/otter/kevin.git
 
 Executable kevin
     Main-is:          Kevin.hs
-    Build-Depends:    base == 4.*, network == 2.3.*
+    Build-Depends:    network >=2.3 && <2.4, base >=4 && <5
