@@ -1,7 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Kevin.Base (
     Kevin(..),
+    KevinException(..),
     mkKevin,
     mkListener,
     readClient,
@@ -16,6 +15,7 @@ import qualified Data.ByteString.Char8 as B
 import System.IO
 import Control.Exception
 import Network
+import Data.Typeable
 
 class KevinServer a where
     readClient, readServer :: a -> IO B.ByteString
@@ -31,6 +31,11 @@ instance KevinServer Kevin where
     
     writeClient (Kevin damn irc) = B.hPut irc
     writeServer (Kevin damn irc) = B.hPut damn
+
+data KevinException = LostClient | LostServer
+    deriving (Show, Typeable)
+
+instance Exception KevinException
 
 mkListener :: IO Socket
 mkListener = listenOn $ PortNumber 6669

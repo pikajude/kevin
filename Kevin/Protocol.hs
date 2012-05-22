@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, DeriveDataTypeable #-}
-
 module Kevin.Protocol (listen) where
 
 import Prelude hiding (putStrLn, catch)
@@ -14,41 +12,37 @@ import qualified Data.ByteString as B
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad (forever, unless)
-import Data.Typeable
-
-data KevinException = ClientInterrupt
-    deriving (Show, Typeable)
-
-instance Exception KevinException
 
 listen :: Kevin -> IO ()
-listen kevin@(Kevin damn irc) = do
+listen kevin = do
     servId <- newEmptyMVar
     clientId <- newEmptyMVar
-    sid <- forkIO $ bracket_ (S.initialize damn)
-                             (S.cleanup damn)
+    sid <- forkIO $ bracket_ (S.initialize kevin)
+                             (S.cleanup kevin)
                              (listenServer kevin clientId)
-    cid <- forkIO $ bracket_ (C.initialize irc)
-                             (C.cleanup irc)
+    cid <- forkIO $ bracket_ (C.initialize kevin)
+                             (C.cleanup kevin)
                              (listenClient kevin servId)
     putMVar servId sid
     putMVar clientId cid
 
 listenClient :: Kevin -> MVar ThreadId -> IO ()
-listenClient k servId = do
+listenClient k servId = flip catches C.errHandlers $ do
     line <- readClient k `catch` (\(e :: IOException) -> do
-        klog Red $ "Client error: " ++ show e
+        klogError $ "client: " ++ show e
         tid <- takeMVar servId
-        throwTo tid ClientInterrupt
+        throwTo tid LostClient
         return "")
     unless (B.null line) $ do
         print line
         listenClient k servId
 
 listenServer :: Kevin -> MVar ThreadId -> IO ()
-listenServer k clId = do
+listenServer k clId = flip catches S.errHandlers $ do
     line <- readServer k `catch` (\(e :: IOException) -> do
-        klog Red $ "Server error: " ++ show e
+        klogError $ "server: " ++ show e
+        tid <- takeMVar clId
+        throwTo tid LostServer
         return "")
     unless (B.null line) $ do
         print line

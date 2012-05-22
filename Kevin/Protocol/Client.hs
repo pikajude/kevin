@@ -1,12 +1,21 @@
-{-# LANGUAGE OverloadedStrings #-}
+module Kevin.Protocol.Client (
+    initialize,
+    cleanup,
+    errHandlers
+) where
 
-module Kevin.Protocol.Client (initialize, cleanup) where
-
+import Kevin.Base
 import Kevin.Util.Logger
 import System.IO
+import Control.Exception
 
-initialize :: Handle -> IO ()
+initialize :: Kevin -> IO ()
 initialize = const $ klog Green "initialize client"
 
-cleanup :: Handle -> IO ()
+cleanup :: Kevin -> IO ()
 cleanup = const $ klog Green "cleanup client"
+
+errHandlers :: [Handler ()]
+errHandlers = [Handler (\(e :: KevinException) -> case e of
+    LostServer -> klogError "Lost server connection, DCing client"
+    x -> throwIO x)]
