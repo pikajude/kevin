@@ -29,8 +29,12 @@ instance KevinServer Kevin where
     readClient (Kevin damn irc) = B.hGetLine irc
     readServer (Kevin damn irc) = B.hGetLine damn
     
-    writeClient (Kevin damn irc) = B.hPut irc
-    writeServer (Kevin damn irc) = B.hPut damn
+    writeClient (Kevin damn irc) str = do
+        klog Blue $ "client -> " ++ (B.unpack str)
+        B.hPut irc str
+    writeServer (Kevin damn irc) str = do
+        klog Magenta $ "server -> " ++ (B.unpack str)
+        B.hPut damn str
 
 data KevinException = LostClient | LostServer
     deriving (Show, Typeable)
