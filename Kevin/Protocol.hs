@@ -1,17 +1,31 @@
-module Kevin.Protocol (listen) where
+module Kevin.Protocol (listen, mkKevin) where
 
 import Prelude hiding (putStrLn, catch)
 import Kevin.Base
 import Kevin.Util.Logger
+import Kevin.Settings
 import qualified Kevin.Protocol.Client as C
 import qualified Kevin.Protocol.Server as S
-import System.IO (Handle(..), hClose, hIsClosed)
+import System.IO
 import Control.Exception.Base
 import Control.Exception
 import qualified Data.ByteString as B
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad (forever, unless)
+import Control.Monad.State
+import Network
+
+mkKevin :: Socket -> IO Kevin
+mkKevin sock = withSocketsDo $ do
+    (client, _, _) <- accept sock
+    klog Blue "received a client"
+    damn <- connectTo "chat.deviantart.com" $ PortNumber 3900
+    hSetBuffering damn NoBuffering
+    hSetBuffering client NoBuffering
+    return Kevin { damn = damn
+                 , irc = client
+                 }
 
 listen :: Kevin -> IO ()
 listen kevin = do
