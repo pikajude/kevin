@@ -6,39 +6,42 @@ import Kevin.Util.Logger
 import Kevin.Settings
 import qualified Kevin.Protocol.Client as C
 import qualified Kevin.Protocol.Server as S
-import System.IO
 import Control.Exception.Base
-import Control.Exception
 import qualified Data.ByteString as B
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad (forever, unless)
 import Control.Monad.State
-import Network
+import System.IO (hSetBuffering, BufferMode(..))
 
 mkKevin :: Socket -> IO Kevin
 mkKevin sock = withSocketsDo $ do
     (client, _, _) <- accept sock
     klog Blue "received a client"
+    (authtoken, username) <- C.getAuthInfo client
+    klog Blue $ "client info: " ++ username ++ ", " ++ authtoken
     damn <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damn NoBuffering
     hSetBuffering client NoBuffering
     return Kevin { damn = damn
                  , irc = client
+                 , settings = Settings username authtoken
                  }
 
-listen :: Kevin -> IO ()
-listen kevin = do
-    servId <- newEmptyMVar
-    clientId <- newEmptyMVar
-    sid <- forkIO $ bracket_ (S.initialize kevin)
-                             (S.cleanup kevin)
-                             (listenServer kevin clientId)
-    cid <- forkIO $ bracket_ (C.initialize kevin)
-                             (C.cleanup kevin)
-                             (listenClient kevin servId)
-    putMVar servId sid
-    putMVar clientId cid
+listen :: ReaderT Kevin IO ()
+listen = do
+    kevin <- ask
+    liftIO $ do
+        servId <- newEmptyMVar
+        clientId <- newEmptyMVar
+        sid <- forkIO $ bracket_ (S.initialize kevin)
+                                 (S.cleanup kevin)
+                                 (listenServer kevin clientId)
+        cid <- forkIO $ bracket_ (return ())
+                                 (C.cleanup kevin)
+                                 (listenClient kevin servId)
+        putMVar servId sid
+        putMVar clientId cid
 
 listenClient :: Kevin -> MVar ThreadId -> IO ()
 listenClient k servId = flip catches C.errHandlers $ do

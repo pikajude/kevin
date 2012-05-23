@@ -8,4 +8,4 @@ kevinServer = do
     sock <- mkListener
     forever $ do
         kev <- mkKevin sock
-        listen kev
+        runReaderT listen kev
