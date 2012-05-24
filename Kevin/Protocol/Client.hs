@@ -5,7 +5,7 @@ module Kevin.Protocol.Client (
     getAuthInfo
 ) where
 
-import Prelude hiding (catch, null)
+import Prelude hiding (null)
 import Kevin.Base
 import Kevin.Util.Logger
 
