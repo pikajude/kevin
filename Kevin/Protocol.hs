@@ -1,4 +1,9 @@
-module Kevin.Protocol (listen, mkKevin) where
+module Kevin.Protocol (
+    listen,
+    mkKevin,
+    mkListener,
+    kevinServer
+) where
 
 import Prelude hiding (putStrLn, catch)
 import Kevin.Base
@@ -25,6 +30,16 @@ mkKevin sock = withSocketsDo $ do
                  , clientId = cid
                  , settings = Settings user auth
                  }
+
+mkListener :: IO Socket
+mkListener = listenOn $ PortNumber 6669
+
+kevinServer :: IO ()
+kevinServer = do
+    sock <- mkListener
+    forever $ do
+        kev <- mkKevin sock
+        runReaderT listen kev
 
 listen :: KevinIO ()
 listen = do

@@ -1,10 +1,3 @@
-module Kevin (kevinServer) where
+module Kevin (module Kevin.Base, module Kevin.Protocol) where
 import Kevin.Base
 import Kevin.Protocol
-
-kevinServer :: IO ()
-kevinServer = do
-    sock <- mkListener
-    forever $ do
-        kev <- mkKevin sock
-        runReaderT listen kev

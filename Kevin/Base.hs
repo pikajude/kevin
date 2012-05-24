@@ -2,7 +2,6 @@ module Kevin.Base (
     Kevin(..),
     KevinIO,
     KevinException(..),
-    mkListener,
     readClient,
     readServer,
     writeClient,
@@ -64,6 +63,3 @@ data KevinException = LostClient | LostServer
     deriving (Show, Typeable)
 
 instance Exception KevinException
-
-mkListener :: IO Socket
-mkListener = listenOn $ PortNumber 6669
