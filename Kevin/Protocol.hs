@@ -34,12 +34,10 @@ kevinServer = do
     sock <- mkListener
     forever $ do
         kev <- mkKevin sock
-        runReaderT listen kev
+        listen kev
 
-listen :: KevinIO ()
-listen = do
-    kevin <- ask
-    liftIO $ do
+listen :: Kevin -> IO ()
+listen kevin = do
         sid <- forkIO $ runReaderT (bracket_ S.initialize S.cleanup S.listen) kevin
         cid <- forkIO $ runReaderT (bracket_ (return ()) C.cleanup C.listen) kevin
         putMVar (serverId kevin) sid
