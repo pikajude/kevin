@@ -22,6 +22,7 @@ colorAsNum Gray = 37
 klog :: Color -> String -> IO ()
 klog c str = let d = colorAsNum c in printf "\027[%dm%s\027[0m\n" d str
 
-klogError = klog Red . ("ERROR :: " ++)
+klogError, klogWarn :: String -> IO ()
 
+klogError = klog Red . ("ERROR :: " ++)
 klogWarn = klog Yellow . ("WARNING :: " ++)

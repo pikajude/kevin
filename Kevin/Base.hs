@@ -1,6 +1,6 @@
 module Kevin.Base (
     Kevin(..),
-    KevinIO(..),
+    KevinIO,
     KevinException(..),
     mkListener,
     readClient,
@@ -17,12 +17,11 @@ import Kevin.Settings
 import Data.ByteString.Char8 as B
 import Data.Typeable
 import Data.List (intercalate)
-import System.IO as K (Handle(..))
-import Control.Exception as K (Exception(..), IOException(..))
+import System.IO as K (Handle)
+import Control.Exception as K (IOException)
 import Network as K
 import Control.Monad.Reader as K
 import Control.Concurrent as K
-import Control.Concurrent.MVar as K
 import Control.Monad.CatchIO as K
 
 class KevinServer a where

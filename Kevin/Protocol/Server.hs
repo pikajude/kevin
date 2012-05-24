@@ -8,8 +8,6 @@ module Kevin.Protocol.Server (
 import Prelude hiding (catch, null)
 import Kevin.Base
 import Kevin.Util.Logger
-import qualified Data.ByteString.Char8 as B
-import Control.Monad.CatchIO
 
 initialize :: KevinIO ()
 initialize = ask >>= \k -> io $ writeServer k "dAmnClient 0.3\nagent=kevin 0.1\n\0"
@@ -26,7 +24,7 @@ listen = flip catches errHandlers $ do
         listen
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [Handler (\(e :: KevinException) -> io $ klogError "Lost client connection, DCing server"),
+errHandlers = [Handler (\(_ :: KevinException) -> io $ klogError "Lost client connection, DCing server"),
                Handler (\(e :: IOException) -> do
                    clId <- asks clientId
                    io $ do

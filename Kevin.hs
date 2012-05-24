@@ -1,7 +1,6 @@
 module Kevin (kevinServer) where
 import Kevin.Base
 import Kevin.Protocol
-import Control.Monad (forever)
 
 kevinServer :: IO ()
 kevinServer = do
