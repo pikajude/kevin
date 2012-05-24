@@ -4,17 +4,19 @@ module Kevin.Settings (
     setUsername,
     setAuthtoken
 ) where
+    
+import Data.ByteString.Char8
 
-data Settings = Settings { username :: String
-                         , authtoken :: String
-                         }
+data Settings = Settings { username :: ByteString
+                         , authtoken :: ByteString
+                         } deriving (Show)
 
 emptySettings :: Settings
 emptySettings = Settings { username = ""
                          , authtoken = ""
                          }
 
-setUsername, setAuthtoken :: String -> Settings -> Settings
+setUsername, setAuthtoken :: ByteString -> Settings -> Settings
 
 setUsername  str (Settings _ auth) = Settings str auth
 setAuthtoken str (Settings user _) = Settings user str

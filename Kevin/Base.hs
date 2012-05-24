@@ -6,14 +6,13 @@ module Kevin.Base (
     readServer,
     writeClient,
     writeServer,
-    module B,
     module K,
     io
 ) where
 
 import Kevin.Util.Logger
 import Kevin.Settings
-import Data.ByteString.Char8 as B
+import qualified Data.ByteString.Char8 as B
 import Data.Typeable
 import Data.List (intercalate)
 import System.IO as K (Handle)

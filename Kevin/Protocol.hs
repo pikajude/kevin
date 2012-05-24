@@ -7,23 +7,24 @@ import Kevin.Settings
 import qualified Kevin.Protocol.Client as C
 import qualified Kevin.Protocol.Server as S
 import System.IO (hSetBuffering, BufferMode(..))
+import Control.Monad.State
 
 mkKevin :: Socket -> IO Kevin
 mkKevin sock = withSocketsDo $ do
     (client, _, _) <- accept sock
+    hSetBuffering client NoBuffering
     klog Blue "received a client"
-    (user, auth) <- C.getAuthInfo client
-    klog Blue $ "client info: " ++ user ++ ", " ++ auth
+    set <- execStateT (C.getAuthInfo client) emptySettings
+    klog Blue $ "client info: " ++ show set
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
-    hSetBuffering client NoBuffering
     cid <- newEmptyMVar
     sid <- newEmptyMVar
     return Kevin { damn = damnSock
                  , irc = client
                  , serverId = sid
                  , clientId = cid
-                 , settings = Settings user auth
+                 , settings = set
                  }
 
 mkListener :: IO Socket

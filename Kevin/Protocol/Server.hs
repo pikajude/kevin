@@ -5,7 +5,7 @@ module Kevin.Protocol.Server (
     errHandlers
 ) where
 
-import Prelude hiding (null)
+import qualified Data.ByteString.Char8 as B
 import Kevin.Base
 import Kevin.Util.Logger
 
@@ -19,7 +19,7 @@ listen :: KevinIO ()
 listen = flip catches errHandlers $ do
     k <- ask
     line <- io $ readServer k
-    unless (null line) $ do
+    unless (B.null line) $ do
         io $ print line
         listen
 
