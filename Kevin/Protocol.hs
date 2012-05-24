@@ -1,9 +1,4 @@
-module Kevin.Protocol (
-    listen,
-    mkKevin,
-    mkListener,
-    kevinServer
-) where
+module Kevin.Protocol (kevinServer) where
 
 import Prelude hiding (putStrLn, catch)
 import Kevin.Base
