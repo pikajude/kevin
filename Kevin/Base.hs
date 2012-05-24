@@ -35,7 +35,7 @@ data Kevin = Kevin { damn :: Handle
 
 type KevinIO = ReaderT Kevin IO
 
-io :: IO a -> KevinIO a
+io :: MonadIO m => IO a -> m a
 io = liftIO
                    
 padLines :: Int -> B.ByteString -> String
@@ -58,7 +58,7 @@ instance KevinServer Kevin where
         klog Magenta $ "server -> " ++ padLines 10 str
         B.hPut (damn k) str
 
-data KevinException = LostClient | LostServer
+data KevinException = LostClient | LostServer | ParseFailure
     deriving (Show, Typeable)
 
 instance Exception KevinException

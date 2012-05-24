@@ -9,6 +9,7 @@ import qualified Data.ByteString.Char8 as B
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Settings
+import Kevin.Packet.IRC
 import Control.Monad.State
 
 cleanup :: KevinIO ()
@@ -23,16 +24,22 @@ listen = flip catches errHandlers $ do
         listen
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [Handler (\(_ :: KevinException) -> io $ klogError "Lost server connection, DCing client"),
-               Handler (\(e :: IOException) -> do
-                   servId <- asks serverId
-                   io $ do
-                       klogError $ "client: " ++ show e
-                       tid <- takeMVar servId
-                       throwTo tid LostClient)]
+errHandlers = [
+    Handler (\(e :: KevinException) -> case e of
+        LostServer -> io $ klogError "Lost server connection, DCing client"
+        ParseFailure -> io $ klogError "Bad communication from client"
+        _ -> io $ klogError "Got the wrong exception"),
+        
+    Handler (\(e :: IOException) -> do
+        servId <- asks serverId
+        io $ do
+            klogError $ "client: " ++ show e
+            tid <- takeMVar servId
+            throwTo tid LostClient)
+              ]
 
 getAuthInfo :: Handle -> StateT Settings IO ()
 getAuthInfo handle = do
-    liftIO $ B.hPut handle "Please enter your username: "
-    user <- liftIO $ B.hGetLine handle
-    modify (setUsername $ B.init user)
+    io $ B.hPut handle "Please enter your username: "
+    pkt <- io $ fmap parsePacket $ B.hGetLine handle
+    modify (setUsername $ head $ params pkt)
