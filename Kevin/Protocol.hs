@@ -4,8 +4,8 @@ import Prelude hiding (putStrLn, catch)
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Settings
-import qualified Kevin.Protocol.Client as C
-import qualified Kevin.Protocol.Server as S
+import qualified Kevin.Protocol.IRC as C
+import qualified Kevin.Protocol.Damn as S
 import System.IO (hSetBuffering, BufferMode(..))
 import Control.Monad.State
 

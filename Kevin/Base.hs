@@ -41,13 +41,22 @@ io = liftIO
 padLines :: Int -> B.ByteString -> String
 padLines len b = let (first:rest) = Prelude.lines $ B.unpack b in (++) (first ++ "\n") $ Data.List.intercalate "\n" $ Prelude.map (Prelude.replicate len ' ' ++) rest
 
+hGetSep :: Char -> Handle -> IO B.ByteString
+hGetSep sep h = do
+    ch <- fmap B.head $ B.hGet h 1
+    if ch == sep
+        then return $ B.singleton sep
+        else do
+            nextch <- hGetSep sep h
+            return $ B.cons ch nextch
+
 instance KevinServer Kevin where
     readClient k = do
         line <- B.hGetLine $ irc k
         klog Blue $ "client <- " ++ padLines 10 line
-        return line
+        return $ B.init line
     readServer k = do
-        line <- B.hGetLine $ damn k
+        line <- hGetSep '\x0' $ damn k
         klog Magenta $ "server <- " ++ padLines 10 line
         return line
     

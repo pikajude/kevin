@@ -5,8 +5,7 @@ module Kevin.Util.Logger (
     Color(..)
 ) where
 
-import Prelude hiding (log)
-import Text.Printf
+import Data.Char (isSpace)
 
 data Color = Red | Blue | Green | Cyan | Magenta | Yellow | Gray
 
@@ -20,7 +19,9 @@ colorAsNum Cyan = 36
 colorAsNum Gray = 37
 
 klog :: Color -> String -> IO ()
-klog c str = let d = colorAsNum c in printf "\027[%dm%s\027[0m\n" d str
+klog c str = let d = colorAsNum c in putStrLn $ "\027[" ++ show d ++ "m" ++ rtrimmed ++ "\027[0m"
+    where
+        rtrimmed = reverse $ dropWhile (\x -> isSpace x || x == '\x0') $ reverse str
 
 klogError, klogWarn :: String -> IO ()
 

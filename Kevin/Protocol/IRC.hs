@@ -1,4 +1,4 @@
-module Kevin.Protocol.Client (
+module Kevin.Protocol.IRC (
     cleanup,
     listen,
     errHandlers,
@@ -40,6 +40,25 @@ errHandlers = [
 
 getAuthInfo :: Handle -> StateT Settings IO ()
 getAuthInfo handle = do
-    io $ B.hPut handle "Please enter your username: "
     pkt <- io $ fmap parsePacket $ B.hGetLine handle
-    modify (setUsername $ head $ params pkt)
+    io $ klog Blue $ "client <- " ++ B.unpack (asString pkt)
+    case command pkt of
+        "PASS" -> do
+            modify (setAuthtoken $ head $ params pkt)
+            getAuthInfo handle
+        "NICK" -> do
+            modify (setUsername $ head $ params pkt)
+            getAuthInfo handle
+        "USER" -> welcome handle
+        _ -> io $ klogError $ "invalid packet: " ++ show pkt
+
+welcome :: Handle -> StateT Settings IO ()
+welcome handle = do
+    nick <- gets username
+    mapM_ (\x -> io $ (klog Blue $ "client -> " ++ B.unpack (asString x)) >> (B.hPut handle $ asString x)) [
+        Packet { prefix = Just hostname
+               , command = "001"
+               , params = [nick, B.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]] }
+        ]
+    where
+        hostname = "chat.deviantart.com"

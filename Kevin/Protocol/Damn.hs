@@ -1,4 +1,4 @@
-module Kevin.Protocol.Server (
+module Kevin.Protocol.Damn (
     initialize,
     cleanup,
     listen,

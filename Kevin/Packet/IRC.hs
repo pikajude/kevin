@@ -1,6 +1,7 @@
 module Kevin.Packet.IRC (
     Packet(..),
-    parsePacket
+    parsePacket,
+    asString
 ) where
 
 import Prelude hiding (takeWhile)
@@ -71,3 +72,10 @@ parsePacket :: B.ByteString -> Packet
 parsePacket str = case parseOnly packetParser str of
    Left msg -> error $ "IRC packet parsing error: " ++ msg
    Right p -> p
+
+showParams :: [B.ByteString] -> B.ByteString
+showParams = B.unwords . map (\str -> if B.elem ' ' str then B.cons ':' str else str)
+
+asString :: Packet -> B.ByteString
+asString (Packet (Just str) cmd pms) = flip B.append "\r\n" $ B.unwords [B.cons ':' str, cmd, showParams pms]
+asString (Packet Nothing c p) = flip B.append "\r\n" $ B.unwords [c, showParams p]
