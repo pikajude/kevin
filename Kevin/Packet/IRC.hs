@@ -5,16 +5,20 @@ module Kevin.Packet.IRC (
 
 import Prelude hiding (takeWhile)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (toUpper)
 import Data.Attoparsec.ByteString.Char8
-import Control.Applicative ((<|>), (<$>), (<*>))
+import Control.Applicative ((<|>), (<$>), (<*>), (*>))
 
 data Packet = Packet { prefix :: Maybe B.ByteString
                      , command :: B.ByteString
                      , params :: [B.ByteString]
                      } deriving (Show)
 
+badChars :: String
+badChars = "\x20\x0\xd\xa"
+
 spaces :: Parser B.ByteString
-spaces = takeWhile1 (==' ')
+spaces = takeWhile1 isSpace
 
 servername :: Parser B.ByteString
 servername = takeWhile1 (inClass "a-z0-9.-")
@@ -30,26 +34,23 @@ nick :: Parser B.ByteString
 nick = B.cons <$> letter_ascii <*> takeWhile (inClass "a-zA-Z0-9[]\\`^{}-")
 
 user :: Parser B.ByteString
-user = takeWhile1 (notInClass "\x20\x0\xd\xa")
+user = takeWhile1 (notInClass badChars)
 
 parsePrefix :: Parser B.ByteString
 parsePrefix = username <|> servername
 
 parseCommand :: Parser B.ByteString
-parseCommand = (B.cons <$> letter_ascii <*> takeWhile isAlpha_ascii) <|>
+parseCommand = (takeWhile1 isAlpha_ascii) <|>
                (do { a <- digit; b <- digit; c <- digit; return $ B.pack [a,b,c]})
 
 parseParams :: Parser [B.ByteString]
 parseParams = (colonParam <|> nonColonParam) `sepBy` spaces
 
 colonParam :: Parser B.ByteString
-colonParam = do
-    char ':'
-    str <- takeWhile (notInClass "\x0\xd\xa")
-    return str
+colonParam = char ':' *> takeWhile (notInClass "\x0\xd\xa")
 
 nonColonParam :: Parser B.ByteString
-nonColonParam = takeWhile (notInClass "\x0\x20\xd\xa")
+nonColonParam = takeWhile (notInClass badChars)
 
 crlf :: Parser B.ByteString
 crlf = string "\r\n"
@@ -64,9 +65,9 @@ messageBegin = do
 packetParser :: Parser Packet
 packetParser = do
     pre <- option Nothing messageBegin
-    cmd <- parseCommand
+    cmd <- B.map toUpper <$> parseCommand
     spaces
-    par <- parseParams
+    par <- filter (not . B.null) <$> parseParams
     option "" crlf
     return $ Packet pre cmd par
 
