@@ -12,6 +12,8 @@ import Kevin.Settings
 import Kevin.Packet.IRC
 import Control.Monad.State
 
+type KevinState = StateT Settings IO
+
 cleanup :: KevinIO ()
 cleanup = io $ klog Green "cleanup client"
 
@@ -38,7 +40,7 @@ errHandlers = [
             throwTo tid LostClient)
               ]
 
-getAuthInfo :: Handle -> StateT Settings IO ()
+getAuthInfo :: Handle -> KevinState ()
 getAuthInfo handle = do
     pkt <- io $ fmap parsePacket $ B.hGetLine handle
     io $ klog Blue $ "client <- " ++ B.unpack (asString pkt)
@@ -52,7 +54,7 @@ getAuthInfo handle = do
         "USER" -> welcome handle
         _ -> io $ klogError $ "invalid packet: " ++ show pkt
 
-welcome :: Handle -> StateT Settings IO ()
+welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- gets username
     mapM_ (\x -> io $ (klog Blue $ "client -> " ++ B.unpack (asString x)) >> (B.hPut handle $ asString x)) [
