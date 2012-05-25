@@ -7,7 +7,7 @@ import Prelude hiding (takeWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Attoparsec.ByteString.Char8
-import Control.Applicative ((<|>), (<$>), (<*>), (*>))
+import Control.Applicative ((<|>), (<$>), (<*>), (*>), (<*))
 
 data Packet = Packet { prefix :: Maybe B.ByteString
                      , command :: B.ByteString
@@ -56,11 +56,7 @@ crlf :: Parser B.ByteString
 crlf = string "\r\n"
 
 messageBegin :: Parser (Maybe B.ByteString)
-messageBegin = do
-    char ':'
-    pre <- parsePrefix
-    spaces
-    return $ Just pre
+messageBegin = Just <$> (char ':' *> parsePrefix <* spaces)
 
 packetParser :: Parser Packet
 packetParser = do
