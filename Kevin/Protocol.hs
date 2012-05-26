@@ -14,7 +14,7 @@ mkKevin sock = withSocketsDo $ do
     (client, _, _) <- accept sock
     hSetBuffering client NoBuffering
     klog Blue "received a client"
-    set <- execStateT (C.getAuthInfo client) emptySettings
+    set <- execStateT (C.getAuthInfo client False) emptySettings
     klog Blue $ "client info: " ++ show set
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering

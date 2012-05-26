@@ -41,7 +41,7 @@ parsePrefix :: Parser B.ByteString
 parsePrefix = username <|> servername
 
 parseCommand :: Parser B.ByteString
-parseCommand = (takeWhile1 isAlpha_ascii) <|>
+parseCommand = takeWhile1 isAlpha_ascii <|>
                (do { a <- digit; b <- digit; c <- digit; return $ B.pack [a,b,c]})
 
 parseParams :: Parser [B.ByteString]
@@ -74,7 +74,7 @@ parsePacket str = case parseOnly packetParser str of
    Right p -> p
 
 showParams :: [B.ByteString] -> B.ByteString
-showParams = B.unwords . map (\str -> if B.elem ' ' str then B.cons ':' str else str)
+showParams = B.unwords . map (\str -> if ' ' `B.elem` str then B.cons ':' str else str)
 
 asString :: Packet -> B.ByteString
 asString (Packet (Just str) cmd pms) = flip B.append "\r\n" $ B.unwords [B.cons ':' str, cmd, showParams pms]
