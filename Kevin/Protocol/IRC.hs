@@ -58,9 +58,34 @@ welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- gets username
     mapM_ (\x -> io $ (klog Blue $ "client -> " ++ B.unpack (asString x)) >> (B.hPut handle $ asString x)) [
-        Packet { prefix = Just hostname
+        Packet { prefix = hostname
                , command = "001"
-               , params = [nick, B.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]] }
+               , params = [nick, B.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]
+               },
+        Packet { prefix = hostname
+               , command = "002"
+               , params = [nick, "Your host is chat.deviantart.com, running dAmnServer 0.3"]
+               },
+        Packet { prefix = hostname
+               , command = "003"
+               , params = [nick, "This server was created Thu Apr 28 1994 at 05:30:00 EDT"]
+               },
+        Packet { prefix = hostname
+               , command = "004"
+               , params = [nick, "chat.deviantart.com", "dAmnServer0.3", "qaohv", "i"]
+               },
+        Packet { prefix = hostname
+               , command = "375"
+               , params = [nick, "- chat.deviantart.com Message of the day -"]
+               },
+        Packet { prefix = hostname
+               , command = "372"
+               , params = [nick, "- dAmn chat on IRC brought to you by kevin " `B.append` VERSION]
+               },
+        Packet { prefix = hostname
+               , command = "376"
+               , params = [nick, "End of MOTD command"]
+               }
         ]
     where
-        hostname = "chat.deviantart.com"
+        hostname = Just "chat.deviantart.com"
