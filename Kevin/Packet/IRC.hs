@@ -1,10 +1,9 @@
 module Kevin.Packet.IRC (
     Packet(..),
-    parsePacket,
-    asString
+    parsePacket
 ) where
 
-import Kevin.Base (KevinException(..))
+import Kevin.Base (KevinException(..), KClientPacket(..))
 import Prelude hiding (takeWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
@@ -78,6 +77,6 @@ parsePacket str = case parseOnly packetParser str of
 showParams :: [B.ByteString] -> B.ByteString
 showParams = B.unwords . map (\str -> if ' ' `B.elem` str then B.cons ':' str else str)
 
-asString :: Packet -> B.ByteString
-asString (Packet (Just str) cmd pms) = flip B.append "\r\n" $ B.unwords [B.cons ':' str, cmd, showParams pms]
-asString (Packet Nothing c p) = flip B.append "\r\n" $ B.unwords [c, showParams p]
+instance KClientPacket Packet where
+    asStringC (Packet (Just str) cmd pms) = flip B.append "\r\n" $ B.unwords [B.cons ':' str, cmd, showParams pms]
+    asStringC (Packet Nothing c p) = flip B.append "\r\n" $ B.unwords [c, showParams p]

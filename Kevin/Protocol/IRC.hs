@@ -41,12 +41,12 @@ errHandlers = [
               ]
 
 notice :: Handle -> B.ByteString -> IO ()
-notice h str = B.hPut h $ asString $ Packet Nothing "NOTICE" ["AUTH", str]
+notice h str = B.hPut h $ asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do
     pkt <- io $ fmap parsePacket $ B.hGetLine handle
-    io $ klog Blue $ "client <- " ++ B.unpack (asString pkt)
+    io $ klog Blue $ "client <- " ++ B.unpack (asStringC pkt)
     case command pkt of
         "PASS" -> do
             modify (setPassword $ head $ params pkt)
@@ -64,7 +64,7 @@ getAuthInfo handle authRetry = do
 welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- gets username
-    mapM_ (\x -> io $ klog Blue ("client -> " ++ B.unpack (asString x)) >> B.hPut handle (asString x)) [
+    mapM_ (\x -> io $ klog Blue ("client -> " ++ B.unpack (asStringC x)) >> B.hPut handle (asStringC x)) [
         Packet { prefix = hostname
                , command = "001"
                , params = [nick, B.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]
