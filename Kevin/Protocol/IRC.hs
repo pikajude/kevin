@@ -21,10 +21,9 @@ cleanup = io $ klog Green "cleanup client"
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
     k <- ask
-    line <- io $ readClient k
-    unless (B.null line) $ do
-        io $ print line
-        listen
+    pkt <- io $ fmap parsePacket $ readClient k
+    io $ print pkt
+    listen
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [
@@ -42,7 +41,7 @@ errHandlers = [
               ]
 
 notice :: Handle -> B.ByteString -> IO ()
-notice h str = B.hPut h $ asString $ Packet Nothing "NOTICE" ["AUTH", "*** " `B.append` str]
+notice h str = B.hPut h $ asString $ Packet Nothing "NOTICE" ["AUTH", str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do

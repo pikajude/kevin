@@ -2,6 +2,8 @@ module Kevin.Base (
     Kevin(..),
     KevinIO,
     KevinException(..),
+    KServerPacket(..),
+    KClientPacket(..),
     readClient,
     readServer,
     writeClient,
@@ -22,9 +24,16 @@ import Control.Monad.Reader as K
 import Control.Concurrent as K
 import Control.Monad.CatchIO as K
 
+class KServerPacket a where
+    asStringS :: a -> B.ByteString
+
+class KClientPacket a where
+    asStringC :: a -> B.ByteString
+
 class KevinServer a where
     readClient, readServer :: a -> IO B.ByteString
-    writeClient, writeServer :: a -> B.ByteString -> IO ()
+    writeServer :: (KServerPacket p) => a -> p -> IO ()
+    writeClient :: (KClientPacket p) => a -> p -> IO ()
 
 data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
@@ -61,11 +70,19 @@ instance KevinServer Kevin where
         return line
     
     writeClient k str = do
-        klog Blue $ "client -> " ++ padLines 10 str
-        B.hPut (irc k) str
+        let pkt = asStringC str
+        klog Blue $ "client -> " ++ padLines 10 pkt
+        B.hPut (irc k) pkt
     writeServer k str = do
-        klog Magenta $ "server -> " ++ padLines 10 str
-        B.hPut (damn k) str
+        let pkt = asStringS str
+        klog Magenta $ "server -> " ++ padLines 10 pkt
+        B.hPut (damn k) pkt
+
+instance KServerPacket B.ByteString where
+    asStringS = id
+
+instance KClientPacket B.ByteString where
+    asStringC = id
 
 data KevinException = LostClient | LostServer | ParseFailure
     deriving (Show, Typeable)

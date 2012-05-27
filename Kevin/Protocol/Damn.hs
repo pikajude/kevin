@@ -5,12 +5,19 @@ module Kevin.Protocol.Damn (
     errHandlers
 ) where
 
-import qualified Data.ByteString.Char8 as B
 import Kevin.Base
 import Kevin.Util.Logger
+import Kevin.Settings
+import Kevin.Packet.Damn
+import qualified Data.ByteString.Char8 as B
 
 initialize :: KevinIO ()
-initialize = ask >>= \k -> io $ writeServer k "dAmnClient 0.3\nagent=kevin 0.1\n\0"
+initialize = ask >>= \k -> io $ writeServer k $
+    Packet { command = "dAmnClient"
+           , parameter = Just "0.3"
+           , args = [("agent","kevin 0.1")]
+           , body = Nothing
+           }
 
 cleanup :: KevinIO ()
 cleanup = io $ klog Blue "cleanup server"
@@ -18,13 +25,30 @@ cleanup = io $ klog Blue "cleanup server"
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
     k <- ask
-    line <- io $ readServer k
-    unless (B.null line) $ do
-        io $ print line
-        listen
+    pkt <- io $ fmap parsePacket $ readServer k
+    respond pkt (command pkt)
+    listen
+
+sendPacket :: Packet -> KevinIO ()
+sendPacket p = ask >>= \k -> io $ writeServer k p
+
+respond :: Packet -> B.ByteString -> KevinIO ()
+respond _ "dAmnServer" = do
+    set <- asks settings
+    let uname = username set
+        token = authtoken set
+    sendPacket Packet { command = "login"
+                      , parameter = Just uname
+                      , args = [("pk",token)]
+                      , body = Nothing
+                      }
+respond _ str = io $ print $ "Got the packet called " `B.append` str
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [Handler (\(_ :: KevinException) -> io $ klogError "Lost client connection, DCing server"),
+errHandlers = [Handler (\(e :: KevinException) -> case e of
+                   LostClient -> io $ klogError "Lost client connection, DCing server"
+                   ParseFailure -> io $ klogError "Malformed communication from server"
+                   _ -> io $ klogError "Got the wrong exception"),
                Handler (\(e :: IOException) -> do
                    clId <- asks clientId
                    io $ do

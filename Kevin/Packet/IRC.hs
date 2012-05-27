@@ -4,10 +4,12 @@ module Kevin.Packet.IRC (
     asString
 ) where
 
+import Kevin.Base (KevinException(..))
 import Prelude hiding (takeWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Attoparsec.ByteString.Char8
+import Control.Exception (throw)
 import Control.Applicative ((<|>), (<$>), (<*>), (*>), (<*))
 
 data Packet = Packet { prefix :: Maybe B.ByteString
@@ -70,7 +72,7 @@ packetParser = do
 
 parsePacket :: B.ByteString -> Packet
 parsePacket str = case parseOnly packetParser str of
-   Left msg -> error $ "IRC packet parsing error: " ++ msg
+   Left _ -> throw ParseFailure
    Right p -> p
 
 showParams :: [B.ByteString] -> B.ByteString
