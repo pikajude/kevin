@@ -72,17 +72,13 @@ data Kevin = Kevin { damn :: Handle
 type KevinIO = StateT (TVar Kevin) IO
 
 getK :: KevinIO Kevin
-getK = do
-    kev <- get >>= io . readTVarIO
-    return kev
+getK = get >>= io . readTVarIO
 
 putK :: Kevin -> KevinIO ()
 putK k = get >>= io . atomically . flip writeTVar k
 
 getsK :: (Kevin -> a) -> KevinIO a
-getsK f = do
-    k <- getK
-    return $ f k
+getsK f = getK >>= return . f
 
 modifyK :: (Kevin -> Kevin) -> KevinIO ()
 modifyK f = getK >>= putK . f
