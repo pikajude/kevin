@@ -3,7 +3,6 @@ module Kevin.Protocol (kevinServer) where
 import Prelude hiding (putStrLn, catch)
 import Kevin.Base
 import Kevin.Util.Logger
-import Kevin.Settings
 import qualified Kevin.Protocol.IRC as C
 import qualified Kevin.Protocol.Damn as S
 import System.IO (hSetBuffering, BufferMode(..))
@@ -38,6 +37,7 @@ kevinServer = do
 
 listen :: Kevin -> IO ()
 listen kevin = do
-        forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) kevin
-        forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) kevin
-        return ()
+    mvar <- newTVarIO kevin
+    forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) mvar
+    forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) mvar
+    return ()

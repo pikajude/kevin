@@ -9,8 +9,8 @@ import qualified Data.ByteString.Char8 as B
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Util.Token
-import Kevin.Settings
 import Kevin.Packet.IRC
+import qualified Kevin.Protocol.Damn.Send as D
 
 type KevinState = StateT Settings IO
 
@@ -19,15 +19,22 @@ cleanup = io $ klog Green "cleanup client"
 
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
-    k <- get
+    k <- getK
     pkt <- io $ fmap parsePacket $ readClient k
     respond pkt (command pkt)
     listen
 
 respond :: Packet -> B.ByteString -> KevinIO ()
 respond pkt "JOIN" = do
-    l <- gets loggedIn
-    io $ print l
+    l <- getsK loggedIn
+    if l
+        then mapM_ D.sendJoin rooms
+        else do
+            modifyK (addToJoin rooms)
+            getsK toJoin >>= \x -> io $ klog Magenta $ show x
+    where
+        rooms = B.split ',' $ head $ params pkt
+respond _ str = io $ klogError $ B.unpack str
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [

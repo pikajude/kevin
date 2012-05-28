@@ -2,7 +2,9 @@ module Kevin.Packet.Damn (
     Packet(..),
     parsePacket,
     subPacket,
-    fixLoginPacket
+    fixLoginPacket,
+    okay,
+    getArg
 ) where
 
 import Kevin.Base (KevinException(..), KServerPacket(..))
@@ -58,6 +60,12 @@ fixLoginPacket pkt = if command pkt == "login"
 
 subPacket :: Packet -> Maybe Packet
 subPacket = (parsePacket <$>) . body
+
+okay :: Packet -> Bool
+okay (Packet _ _ a _) = let e = lookup "e" a in isNothing e || e == Just "ok"
+
+getArg :: B.ByteString -> Packet -> Maybe B.ByteString
+getArg b p = lookup b (args p)
 
 instance KServerPacket Packet where
     asStringS (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `B.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `B.append`) bod +++ "\n\0"

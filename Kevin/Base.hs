@@ -24,8 +24,12 @@ module Kevin.Base (
     -- * Exports
     module K,
     
-    -- * liftIO
-    io
+    -- * Working with KevinState
+    io,
+    getK,
+    putK,
+    getsK,
+    modifyK
 ) where
 
 import Kevin.Util.Logger
@@ -36,9 +40,13 @@ import Data.List (intercalate, nub)
 import System.IO as K (Handle, hClose)
 import Control.Exception as K (IOException)
 import Network as K
+import Control.Monad.Reader
 import Control.Monad.State as K
-import Control.Concurrent as K
+import Control.Monad.STM (atomically)
+import Control.Concurrent as K (forkIO)
+import Control.Concurrent.STM.TVar as K
 import Control.Monad.CatchIO as K
+import Kevin.Settings as K
 import qualified Data.Map as M
 
 class KServerPacket a where
@@ -61,7 +69,23 @@ data Kevin = Kevin { damn :: Handle
                    , loggedIn :: Bool
                    }
 
-type KevinIO = StateT Kevin IO
+type KevinIO = StateT (TVar Kevin) IO
+
+getK :: KevinIO Kevin
+getK = do
+    kev <- get >>= io . readTVarIO
+    return kev
+
+putK :: Kevin -> KevinIO ()
+putK k = get >>= io . atomically . flip writeTVar k
+
+getsK :: (Kevin -> a) -> KevinIO a
+getsK f = do
+    k <- getK
+    return $ f k
+
+modifyK :: (Kevin -> Kevin) -> KevinIO ()
+modifyK f = getK >>= putK . f
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
