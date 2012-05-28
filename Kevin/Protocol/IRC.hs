@@ -25,7 +25,9 @@ listen = flip catches errHandlers $ do
     listen
 
 respond :: Packet -> B.ByteString -> KevinIO ()
-respond = undefined
+respond pkt "JOIN" = do
+    l <- gets loggedIn
+    io $ print l
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [
@@ -36,6 +38,7 @@ errHandlers = [
         
     Handler (\(e :: IOException) -> io $ klogError $ "client: " ++ show e)]
 
+-- * Authentication-getting function
 notice :: Handle -> B.ByteString -> IO ()
 notice h str = klog Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
     where
@@ -113,3 +116,5 @@ checkToken handle = do
         Nothing -> do
             io $ notice handle "Bad password, try again. (/quote pass yourpassword)"
             getAuthInfo handle True
+
+-- * Send *to* client
