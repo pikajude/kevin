@@ -82,8 +82,7 @@ getsK = flip liftM getK
 modifyK :: (Kevin -> Kevin) -> KevinIO ()
 modifyK f = do
     var <- get
-    kev <- io $ readTVarIO var
-    io $ atomically $ writeTVar var $ f kev
+    (io . atomically) $ modifyTVar var f
 
 io :: MonadIO m => IO a -> m a
 io = liftIO

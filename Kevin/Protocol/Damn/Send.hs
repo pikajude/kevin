@@ -35,7 +35,7 @@ formatRoom :: B.ByteString -> KevinIO B.ByteString
 formatRoom b = do
     uname <- getsK (username . settings)
     if B.head b == '#'
-        then return $ "chat:" `B.append` b
+        then return $ "chat:" `B.append` B.tail b
         else return $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, b]
 
 type Str = B.ByteString -- just make it shorter

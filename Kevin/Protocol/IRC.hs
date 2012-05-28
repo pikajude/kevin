@@ -31,7 +31,6 @@ respond pkt "JOIN" = do
         then mapM_ D.sendJoin rooms
         else do
             modifyK (addToJoin rooms)
-            getsK toJoin >>= \x -> io $ klog Magenta $ show x
     where
         rooms = B.split ',' $ head $ params pkt
 respond _ str = io $ klogError $ B.unpack str
