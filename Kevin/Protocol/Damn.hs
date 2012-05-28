@@ -24,17 +24,17 @@ cleanup = io $ klog Blue "cleanup server"
 
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
-    k <- ask
+    k <- get
     pkt <- io $ fmap parsePacket $ readServer k
     respond pkt (command pkt)
     listen
 
 sendPacket :: Packet -> KevinIO ()
-sendPacket p = ask >>= \k -> io $ writeServer k p
+sendPacket p = get >>= \k -> io $ writeServer k p
 
 respond :: Packet -> B.ByteString -> KevinIO ()
 respond _ "dAmnServer" = do
-    set <- asks settings
+    set <- gets settings
     let uname = username set
         token = authtoken set
     sendPacket Packet { command = "login"

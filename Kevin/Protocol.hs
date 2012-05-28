@@ -7,7 +7,6 @@ import Kevin.Settings
 import qualified Kevin.Protocol.IRC as C
 import qualified Kevin.Protocol.Damn as S
 import System.IO (hSetBuffering, BufferMode(..))
-import Control.Monad.State
 import Data.Map (fromList)
 
 mkKevin :: Socket -> IO Kevin
@@ -23,6 +22,8 @@ mkKevin sock = withSocketsDo $ do
                  , irc = client
                  , settings = set
                  , privclasses = fromList []
+                 , toJoin = []
+                 , loggedIn = False
                  }
 
 mkListener :: IO Socket
@@ -37,6 +38,6 @@ kevinServer = do
 
 listen :: Kevin -> IO ()
 listen kevin = do
-        forkIO $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) kevin
-        forkIO $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) kevin
+        forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) kevin
+        forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) kevin
         return ()

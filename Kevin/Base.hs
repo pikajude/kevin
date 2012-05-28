@@ -4,15 +4,27 @@ module Kevin.Base (
     KevinException(..),
     KServerPacket(..),
     KClientPacket(..),
+    
+    -- * Kevin IO actions
     readClient,
     readServer,
     writeClient,
     writeServer,
     closeClient,
     closeServer,
+    
+    -- * Modify helpers
+    -- *   Privclasses
     setPrivclass,
     onPrivclasses,
+    -- *   Other
+    logIn,
+    addToJoin,
+    
+    -- * Exports
     module K,
+    
+    -- * liftIO
     io
 ) where
 
@@ -20,11 +32,11 @@ import Kevin.Util.Logger
 import Kevin.Settings
 import qualified Data.ByteString.Char8 as B
 import Data.Typeable
-import Data.List (intercalate)
+import Data.List (intercalate, nub)
 import System.IO as K (Handle, hClose)
 import Control.Exception as K (IOException)
 import Network as K
-import Control.Monad.Reader as K
+import Control.Monad.State as K
 import Control.Concurrent as K
 import Control.Monad.CatchIO as K
 import qualified Data.Map as M
@@ -45,19 +57,11 @@ data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
                    , settings :: Settings
                    , privclasses :: PrivclassStore
+                   , toJoin :: [B.ByteString]
+                   , loggedIn :: Bool
                    }
 
-type Chatroom = B.ByteString
-type Privclasses = M.Map B.ByteString Int
-type PrivclassStore = M.Map Chatroom Privclasses
-
-setPrivclass :: Chatroom -> B.ByteString -> Int -> PrivclassStore -> PrivclassStore
-setPrivclass room pcname pcval = M.insertWith M.union room (M.fromList [(pcname,pcval)])
-
-onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
-onPrivclasses f k = k { privclasses = f (privclasses k) }
-
-type KevinIO = ReaderT Kevin IO
+type KevinIO = StateT Kevin IO
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
@@ -106,3 +110,20 @@ data KevinException = LostClient | LostServer | ParseFailure
     deriving (Show, Typeable)
 
 instance Exception KevinException
+
+-- Kevin modifiers
+logIn :: Kevin -> Kevin
+logIn k = k { loggedIn = True }
+
+addToJoin :: [B.ByteString] -> Kevin -> Kevin
+addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
+
+type Chatroom = B.ByteString
+type Privclasses = M.Map B.ByteString Int
+type PrivclassStore = M.Map Chatroom Privclasses
+
+setPrivclass :: Chatroom -> B.ByteString -> Int -> PrivclassStore -> PrivclassStore
+setPrivclass room pcname pcval = M.insertWith M.union room (M.fromList [(pcname,pcval)])
+
+onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
+onPrivclasses f k = k { privclasses = f (privclasses k) }

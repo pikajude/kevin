@@ -11,7 +11,6 @@ import Kevin.Util.Logger
 import Kevin.Util.Token
 import Kevin.Settings
 import Kevin.Packet.IRC
-import Control.Monad.State
 
 type KevinState = StateT Settings IO
 
@@ -20,7 +19,7 @@ cleanup = io $ klog Green "cleanup client"
 
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
-    k <- ask
+    k <- get
     pkt <- io $ fmap parsePacket $ readClient k
     respond pkt (command pkt)
     listen
