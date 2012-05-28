@@ -12,7 +12,7 @@ import Kevin.Packet.Damn
 import qualified Data.ByteString.Char8 as B
 
 initialize :: KevinIO ()
-initialize = ask >>= \k -> io $ writeServer k $
+initialize = sendPacket
     Packet { command = "dAmnClient"
            , parameter = Just "0.3"
            , args = [("agent","kevin 0.1")]

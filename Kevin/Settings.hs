@@ -21,6 +21,6 @@ emptySettings = Settings { username = ""
 
 setUsername, setAuthtoken, setPassword :: ByteString -> Settings -> Settings
 
-setUsername  str (Settings _ pass auth) = Settings str pass auth
-setAuthtoken str (Settings user pass _) = Settings user pass str
-setPassword  str (Settings user _ auth) = Settings user str auth
+setUsername  str set = set { username  = str }
+setAuthtoken str set = set { authtoken = str }
+setPassword  str set = set { password  = str }

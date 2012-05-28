@@ -8,6 +8,7 @@ import qualified Kevin.Protocol.IRC as C
 import qualified Kevin.Protocol.Damn as S
 import System.IO (hSetBuffering, BufferMode(..))
 import Control.Monad.State
+import Data.Map (fromList)
 
 mkKevin :: Socket -> IO Kevin
 mkKevin sock = withSocketsDo $ do
@@ -25,6 +26,7 @@ mkKevin sock = withSocketsDo $ do
                  , serverId = sid
                  , clientId = cid
                  , settings = set
+                 , privclasses = fromList []
                  }
 
 mkListener :: IO Socket

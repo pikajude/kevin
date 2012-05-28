@@ -8,6 +8,8 @@ module Kevin.Base (
     readServer,
     writeClient,
     writeServer,
+    setPrivclass,
+    onPrivclasses,
     module K,
     io
 ) where
@@ -23,6 +25,7 @@ import Network as K
 import Control.Monad.Reader as K
 import Control.Concurrent as K
 import Control.Monad.CatchIO as K
+import qualified Data.Map as M
 
 class KServerPacket a where
     asStringS :: a -> B.ByteString
@@ -40,7 +43,18 @@ data Kevin = Kevin { damn :: Handle
                    , serverId :: MVar ThreadId
                    , clientId :: MVar ThreadId
                    , settings :: Settings
+                   , privclasses :: PrivclassStore
                    }
+
+type Chatroom = B.ByteString
+type Privclasses = M.Map B.ByteString Int
+type PrivclassStore = M.Map Chatroom Privclasses
+
+setPrivclass :: Chatroom -> B.ByteString -> Int -> PrivclassStore -> PrivclassStore
+setPrivclass room pcname pcval = M.insertWith (M.union) room (M.fromList [(pcname,pcval)])
+
+onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
+onPrivclasses f k = k { privclasses = f (privclasses k) }
 
 type KevinIO = ReaderT Kevin IO
 
@@ -48,7 +62,7 @@ io :: MonadIO m => IO a -> m a
 io = liftIO
                    
 padLines :: Int -> B.ByteString -> String
-padLines len b = let (first:rest) = Prelude.lines $ B.unpack b in (++) (first ++ "\n") $ Data.List.intercalate "\n" $ Prelude.map (Prelude.replicate len ' ' ++) rest
+padLines len b = let (first:rest) = lines $ B.unpack b in (++) (first ++ "\n") $ intercalate "\n" $ map (replicate len ' ' ++) rest
 
 hGetSep :: Char -> Handle -> IO B.ByteString
 hGetSep sep h = do
@@ -62,11 +76,11 @@ hGetSep sep h = do
 instance KevinServer Kevin where
     readClient k = do
         line <- B.hGetLine $ irc k
-        klog Blue $ "client <- " ++ padLines 10 line
+        klog Yellow $ "client <- " ++ padLines 10 line
         return $ B.init line
     readServer k = do
         line <- hGetSep '\x0' $ damn k
-        klog Magenta $ "server <- " ++ padLines 10 line
+        klog Cyan $ "server <- " ++ padLines 10 line
         return line
     
     writeClient k str = do

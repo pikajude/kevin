@@ -22,8 +22,11 @@ listen :: KevinIO ()
 listen = flip catches errHandlers $ do
     k <- ask
     pkt <- io $ fmap parsePacket $ readClient k
-    io $ print pkt
+    respond pkt (command pkt)
     listen
+
+respond :: Packet -> B.ByteString -> KevinIO ()
+respond = undefined
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [
@@ -41,12 +44,14 @@ errHandlers = [
               ]
 
 notice :: Handle -> B.ByteString -> IO ()
-notice h str = B.hPut h $ asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
+notice h str = klog Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
+    where
+        asStr = asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do
     pkt <- io $ fmap parsePacket $ B.hGetLine handle
-    io $ klog Blue $ "client <- " ++ B.unpack (asStringC pkt)
+    io $ klog Yellow $ "client <- " ++ B.unpack (asStringC pkt)
     case command pkt of
         "PASS" -> do
             modify (setPassword $ head $ params pkt)
@@ -106,6 +111,7 @@ checkToken :: Handle -> KevinState ()
 checkToken handle = do
     nick <- gets username
     pass <- gets password
+    io $ notice handle "Fetching token..."
     tok <- io $ getToken nick pass
     case tok of
         Just t -> do
