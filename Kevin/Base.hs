@@ -8,6 +8,8 @@ module Kevin.Base (
     readServer,
     writeClient,
     writeServer,
+    closeClient,
+    closeServer,
     setPrivclass,
     onPrivclasses,
     module K,
@@ -19,7 +21,7 @@ import Kevin.Settings
 import qualified Data.ByteString.Char8 as B
 import Data.Typeable
 import Data.List (intercalate)
-import System.IO as K (Handle)
+import System.IO as K (Handle, hClose)
 import Control.Exception as K (IOException)
 import Network as K
 import Control.Monad.Reader as K
@@ -37,11 +39,10 @@ class KevinServer a where
     readClient, readServer :: a -> IO B.ByteString
     writeServer :: (KServerPacket p) => a -> p -> IO ()
     writeClient :: (KClientPacket p) => a -> p -> IO ()
+    closeClient, closeServer :: a -> IO ()
 
 data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
-                   , serverId :: MVar ThreadId
-                   , clientId :: MVar ThreadId
                    , settings :: Settings
                    , privclasses :: PrivclassStore
                    }
@@ -51,7 +52,7 @@ type Privclasses = M.Map B.ByteString Int
 type PrivclassStore = M.Map Chatroom Privclasses
 
 setPrivclass :: Chatroom -> B.ByteString -> Int -> PrivclassStore -> PrivclassStore
-setPrivclass room pcname pcval = M.insertWith (M.union) room (M.fromList [(pcname,pcval)])
+setPrivclass room pcname pcval = M.insertWith M.union room (M.fromList [(pcname,pcval)])
 
 onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
 onPrivclasses f k = k { privclasses = f (privclasses k) }
@@ -68,7 +69,7 @@ hGetSep :: Char -> Handle -> IO B.ByteString
 hGetSep sep h = do
     ch <- fmap B.head $ B.hGet h 1
     if ch == sep
-        then return $ B.singleton sep
+        then return ""
         else do
             nextch <- hGetSep sep h
             return $ B.cons ch nextch
@@ -91,6 +92,9 @@ instance KevinServer Kevin where
         let pkt = asStringS str
         klog Magenta $ "server -> " ++ padLines 10 pkt
         B.hPut (damn k) pkt
+    
+    closeClient = hClose . irc
+    closeServer = hClose . damn
 
 instance KServerPacket B.ByteString where
     asStringS = id

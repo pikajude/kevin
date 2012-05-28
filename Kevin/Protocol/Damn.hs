@@ -49,9 +49,4 @@ errHandlers = [Handler (\(e :: KevinException) -> case e of
                    LostClient -> io $ klogError "Lost client connection, DCing server"
                    ParseFailure -> io $ klogError "Malformed communication from server"
                    _ -> io $ klogError "Got the wrong exception"),
-               Handler (\(e :: IOException) -> do
-                   clId <- asks clientId
-                   io $ do
-                       klogError $ "server: " ++ show e
-                       tid <- takeMVar clId
-                       throwTo tid LostServer)]
+               Handler (\(e :: IOException) -> io $ klogError $ "server: " ++ show e)]

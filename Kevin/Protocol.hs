@@ -19,12 +19,8 @@ mkKevin sock = withSocketsDo $ do
     klog Blue $ "client info: " ++ show set
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
-    cid <- newEmptyMVar
-    sid <- newEmptyMVar
     return Kevin { damn = damnSock
                  , irc = client
-                 , serverId = sid
-                 , clientId = cid
                  , settings = set
                  , privclasses = fromList []
                  }
@@ -41,7 +37,6 @@ kevinServer = do
 
 listen :: Kevin -> IO ()
 listen kevin = do
-        sid <- forkIO $ runReaderT (bracket_ S.initialize S.cleanup S.listen) kevin
-        cid <- forkIO $ runReaderT (bracket_ (return ()) C.cleanup C.listen) kevin
-        putMVar (serverId kevin) sid
-        putMVar (clientId kevin) cid
+        forkIO $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) kevin
+        forkIO $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) kevin
+        return ()

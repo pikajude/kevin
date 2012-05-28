@@ -35,13 +35,7 @@ errHandlers = [
         ParseFailure -> io $ klogError "Bad communication from client"
         _ -> io $ klogError "Got the wrong exception"),
         
-    Handler (\(e :: IOException) -> do
-        servId <- asks serverId
-        io $ do
-            klogError $ "client: " ++ show e
-            tid <- takeMVar servId
-            throwTo tid LostClient)
-              ]
+    Handler (\(e :: IOException) -> io $ klogError $ "client: " ++ show e)]
 
 notice :: Handle -> B.ByteString -> IO ()
 notice h str = klog Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
