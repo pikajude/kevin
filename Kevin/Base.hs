@@ -33,7 +33,6 @@ module Kevin.Base (
 ) where
 
 import Kevin.Util.Logger
-import Kevin.Settings
 import qualified Data.ByteString.Char8 as B
 import Data.Typeable
 import Data.List (intercalate, nub)
@@ -78,7 +77,7 @@ putK :: Kevin -> KevinIO ()
 putK k = get >>= io . atomically . flip writeTVar k
 
 getsK :: (Kevin -> a) -> KevinIO a
-getsK f = getK >>= return . f
+getsK = flip liftM getK
 
 modifyK :: (Kevin -> Kevin) -> KevinIO ()
 modifyK f = getK >>= putK . f

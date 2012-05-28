@@ -39,7 +39,7 @@ respond pkt "login" = do
             io $ klog Green $ "Logged in as " ++ B.unpack uname
             modifyK logIn
             getsK toJoin >>= \x -> io $ klog Magenta $ show x -- mapM_ sendJoin
-        else io $ klogError $ "Login failed: " ++ (B.unpack $ fromJust $ getArg "e" pkt)
+        else io $ klogError $ "Login failed: " ++ B.unpack (fromJust $ getArg "e" pkt)
 respond _ str = io $ print $ "Got the packet called " `B.append` str
 
 errHandlers :: [Handler KevinIO ()]
