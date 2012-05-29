@@ -52,6 +52,7 @@ notice h str = klogNow Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do
     pkt <- io $ fmap parsePacket $ B.hGetLine handle
+    io $ klogNow Yellow $ "client <- " ++ B.unpack (asStringC pkt)
     case command pkt of
         "PASS" -> do
             modify (setPassword $ head $ params pkt)
@@ -62,7 +63,9 @@ getAuthInfo handle authRetry = do
             modify (setUsername $ head $ params pkt)
             getAuthInfo handle False
         "USER" -> welcome handle
-        _ -> when authRetry $ getAuthInfo handle True
+        _ -> do
+            io $ klogNow Red $ "invalid packet: " ++ show pkt
+            when authRetry $ getAuthInfo handle True
 
 welcome :: Handle -> KevinState ()
 welcome handle = do
