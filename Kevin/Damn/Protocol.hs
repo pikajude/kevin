@@ -41,19 +41,23 @@ respond pkt "login" = do
             io $ klog Green $ "Logged in as " ++ B.unpack uname
             modifyK logIn
             getsK toJoin >>= mapM_ sendJoin
-        else io $ klogError $ "Login failed: " ++ B.unpack (fromJust $ getArg "e" pkt)
+        else io $ klogError $ "Login failed: " ++ B.unpack (getArg "e" pkt)
 
 respond pkt "join" = if okay pkt
     then do
         uname <- getsK (username . settings)
         (I.sendJoin uname . deformatRoom . fromJust) $ parameter pkt
-    else io $ klogError $ "Join failed: " ++ B.unpack (fromJust $ getArg "e" pkt)
+    else io $ klogError $ "Join failed: " ++ B.unpack (getArg "e" pkt)
 
-respond pkt "property" = case fromJust $ getArg "p" pkt of
+respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses $ fromJust $ body pkt
-            roomname = deformatRoom $ fromJust $ parameter pkt
         modifyK (onPrivclasses (foldr (.) id (map (setPrivclass roomname) pcs)))
+    "topic" -> do
+        uname <- getsK (username . settings)
+        I.sendTopic uname roomname (getArg "by" pkt) (fromJust (body pkt)) (getArg "ts" pkt)
+    where
+        roomname = (deformatRoom . fromJust . parameter) pkt
 
 respond _ str = io $ print $ "Got the packet called " `B.append` str
 

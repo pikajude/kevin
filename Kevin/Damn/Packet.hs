@@ -66,8 +66,8 @@ subPacket = (parsePacket <$>) . body
 okay :: Packet -> Bool
 okay (Packet _ _ a _) = let e = lookup "e" a in isNothing e || e == Just "ok"
 
-getArg :: B.ByteString -> Packet -> Maybe B.ByteString
-getArg b p = lookup b (args p)
+getArg :: B.ByteString -> Packet -> B.ByteString
+getArg b p = maybe "" id $ lookup b (args p)
 
 parsePrivclasses :: B.ByteString -> [Privclass]
 parsePrivclasses = map (liftM2 (,) (!! 0) (read . B.unpack . (!! 1)) . B.split ':') . B.split '\n'
