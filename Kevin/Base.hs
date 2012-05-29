@@ -144,8 +144,8 @@ type Chatroom = B.ByteString
 type Privclasses = M.Map B.ByteString Int
 type PrivclassStore = M.Map Chatroom Privclasses
 
-setPrivclass :: Chatroom -> B.ByteString -> Int -> PrivclassStore -> PrivclassStore
-setPrivclass room pcname pcval = M.insertWith M.union room (M.fromList [(pcname,pcval)])
+setPrivclass :: Chatroom -> Privclass -> PrivclassStore -> PrivclassStore
+setPrivclass room (p,i) = M.insertWith M.union room (M.singleton p i)
 
 onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
 onPrivclasses f k = k { privclasses = f (privclasses k) }

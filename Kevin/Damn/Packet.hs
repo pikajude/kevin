@@ -1,17 +1,19 @@
 module Kevin.Damn.Packet (
     Packet(..),
     parsePacket,
+    parsePrivclasses,
     subPacket,
     fixLoginPacket,
     okay,
     getArg
 ) where
 
-import Kevin.Base (KevinException(..), KServerPacket(..))
+import Kevin.Base (KevinException(..), KServerPacket(..), Privclass)
 import Control.Exception (throw)
 import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative (many, (<$>))
+import Control.Monad (liftM2)
 import Data.Maybe
 
 data Packet = Packet { command :: B.ByteString
@@ -66,6 +68,9 @@ okay (Packet _ _ a _) = let e = lookup "e" a in isNothing e || e == Just "ok"
 
 getArg :: B.ByteString -> Packet -> Maybe B.ByteString
 getArg b p = lookup b (args p)
+
+parsePrivclasses :: B.ByteString -> [Privclass]
+parsePrivclasses = map (liftM2 (,) (!! 0) (read . B.unpack . (!! 1)) . B.split ':') . B.split '\n'
 
 instance KServerPacket Packet where
     asStringS (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `B.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `B.append`) bod +++ "\n\0"

@@ -49,6 +49,12 @@ respond pkt "join" = if okay pkt
         (I.sendJoin uname . deformatRoom . fromJust) $ parameter pkt
     else io $ klogError $ "Join failed: " ++ B.unpack (fromJust $ getArg "e" pkt)
 
+respond pkt "property" = case fromJust $ getArg "p" pkt of
+    "privclasses" -> do
+        let pcs = parsePrivclasses $ fromJust $ body pkt
+            roomname = deformatRoom $ fromJust $ parameter pkt
+        modifyK (onPrivclasses (foldr (.) id (map (setPrivclass roomname) pcs)))
+
 respond _ str = io $ print $ "Got the packet called " `B.append` str
 
 
