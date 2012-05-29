@@ -14,9 +14,9 @@ import qualified Data.ByteString.Char8 as B
 sendPacket :: Packet -> KevinIO ()
 sendPacket p = getK >>= \k -> io $ writeClient k p
 
-type Room = B.ByteString
-type User = Room
-type Str = Room
+type Str = B.ByteString
+type Room = Str
+type User = Str
 
 sendJoin, sendPart :: User -> Room -> KevinIO ()
 sendChanMsg :: User -> Room -> Str -> KevinIO ()
