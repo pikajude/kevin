@@ -5,7 +5,8 @@ module Kevin.Damn.Packet (
     subPacket,
     fixLoginPacket,
     okay,
-    getArg
+    getArg,
+    splitOn
 ) where
 
 import Kevin.Base (KevinException(..), KServerPacket(..), Privclass)
@@ -53,7 +54,7 @@ parsePacket pack = let (top,b) = B.breakSubstring "\n\n" pack in case fmap (\x -
 
 getResult :: Either String a -> a
 getResult (Right x) = x
-getResult (Left _) = error "getPacket"
+getResult (Left _) = error "getResult"
 
 fixLoginPacket :: Packet -> Packet
 fixLoginPacket pkt = if command pkt == "login"
@@ -71,6 +72,11 @@ getArg b p = maybe "" id $ lookup b (args p)
 
 parsePrivclasses :: B.ByteString -> [Privclass]
 parsePrivclasses = map (liftM2 (,) (!! 0) (read . B.unpack . (!! 1)) . B.split ':') . B.split '\n'
+
+splitOn :: B.ByteString -> B.ByteString -> [B.ByteString]
+splitOn delim str = if B.null l then [f] else f:splitOn delim (B.drop (B.length delim) l)
+    where
+        (f,l) = B.breakSubstring delim str
 
 instance KServerPacket Packet where
     asStringS (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `B.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `B.append`) bod +++ "\n\0"

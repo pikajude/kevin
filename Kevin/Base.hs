@@ -13,13 +13,14 @@ module Kevin.Base (
     closeClient,
     closeServer,
     
-    -- * Privclasses
+    -- * Modifiers
     setPrivclass,
     onPrivclasses,
     Privclass,
-    -- * Other
     logIn,
     addToJoin,
+    setTitle,
+    onTitles,
     
     -- * Exports
     module K,
@@ -64,6 +65,7 @@ data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
                    , settings :: Settings
                    , privclasses :: PrivclassStore
+                   , titles :: TitleStore
                    , toJoin :: [B.ByteString]
                    , loggedIn :: Bool
                    }
@@ -144,8 +146,17 @@ type Chatroom = B.ByteString
 type Privclasses = M.Map B.ByteString Int
 type PrivclassStore = M.Map Chatroom Privclasses
 
+type Title = B.ByteString
+type TitleStore = M.Map Chatroom Title
+
 setPrivclass :: Chatroom -> Privclass -> PrivclassStore -> PrivclassStore
 setPrivclass room (p,i) = M.insertWith M.union room (M.singleton p i)
 
 onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
 onPrivclasses f k = k { privclasses = f (privclasses k) }
+
+setTitle :: Chatroom -> Title -> TitleStore -> TitleStore
+setTitle = M.insert
+
+onTitles :: (TitleStore -> TitleStore) -> Kevin -> Kevin
+onTitles f k = k { titles = f (titles k) }

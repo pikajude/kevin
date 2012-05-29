@@ -6,7 +6,7 @@ import Kevin.Util.Logger
 import qualified Kevin.IRC.Protocol as C
 import qualified Kevin.Damn.Protocol as S
 import System.IO (hSetBuffering, BufferMode(..))
-import Data.Map (fromList)
+import Data.Monoid (mempty)
 
 mkKevin :: Socket -> IO Kevin
 mkKevin sock = withSocketsDo $ do
@@ -20,8 +20,9 @@ mkKevin sock = withSocketsDo $ do
     return Kevin { damn = damnSock
                  , irc = client
                  , settings = set
-                 , privclasses = fromList []
-                 , toJoin = []
+                 , privclasses = mempty
+                 , titles = mempty
+                 , toJoin = mempty
                  , loggedIn = False
                  }
 

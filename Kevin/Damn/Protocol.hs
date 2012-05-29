@@ -56,6 +56,10 @@ respond pkt "property" = case getArg "p" pkt of
     "topic" -> do
         uname <- getsK (username . settings)
         I.sendTopic uname roomname (getArg "by" pkt) (fromJust (body pkt)) (getArg "ts" pkt)
+    "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
+    "members" -> do
+        let members = map parsePacket $ init $ splitOn "\n\n" $ fromJust (body pkt)
+        io $ print members
     where
         roomname = (deformatRoom . fromJust . parameter) pkt
 
