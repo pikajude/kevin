@@ -1,4 +1,4 @@
-module Kevin.Protocol.IRC.Send (
+module Kevin.IRC.Protocol.Send (
     sendJoin,
     sendPart,
     sendChanMsg,
@@ -8,7 +8,7 @@ module Kevin.Protocol.IRC.Send (
 ) where
     
 import Kevin.Base
-import Kevin.Packet.IRC
+import Kevin.IRC.Packet
 import qualified Data.ByteString.Char8 as B
 
 sendPacket :: Packet -> KevinIO ()

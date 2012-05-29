@@ -1,4 +1,4 @@
-module Kevin.Protocol.IRC (
+module Kevin.IRC.Protocol (
     cleanup,
     listen,
     errHandlers,
@@ -9,8 +9,8 @@ import qualified Data.ByteString.Char8 as B
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Util.Token
-import Kevin.Packet.IRC
-import qualified Kevin.Protocol.Damn.Send as D
+import Kevin.IRC.Packet
+import qualified Kevin.Damn.Protocol.Send as D
 
 type KevinState = StateT Settings IO
 

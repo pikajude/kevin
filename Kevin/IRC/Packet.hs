@@ -1,4 +1,4 @@
-module Kevin.Packet.IRC (
+module Kevin.IRC.Packet (
     Packet(..),
     parsePacket
 ) where

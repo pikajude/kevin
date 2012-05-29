@@ -1,4 +1,4 @@
-module Kevin.Protocol.Damn (
+module Kevin.Damn.Protocol (
     initialize,
     cleanup,
     listen,
@@ -7,11 +7,11 @@ module Kevin.Protocol.Damn (
 
 import Kevin.Base
 import Kevin.Util.Logger
-import Kevin.Packet.Damn
+import Kevin.Damn.Packet
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromJust)
-import Kevin.Protocol.Damn.Send
-import qualified Kevin.Protocol.IRC.Send as I
+import Kevin.Damn.Protocol.Send
+import qualified Kevin.IRC.Protocol.Send as I
 
 initialize :: KevinIO ()
 initialize = sendHandshake

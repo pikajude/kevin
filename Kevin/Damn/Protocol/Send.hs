@@ -1,4 +1,4 @@
-module Kevin.Protocol.Damn.Send (
+module Kevin.Damn.Protocol.Send (
     sendPacket,
     formatRoom,
     deformatRoom,
@@ -25,7 +25,7 @@ module Kevin.Protocol.Damn.Send (
 ) where
 
 import Kevin.Base
-import Kevin.Packet.Damn
+import Kevin.Damn.Packet
 import qualified Data.ByteString.Char8 as B
 import Data.List (sort)
 import Data.Char (toLower)
@@ -72,7 +72,7 @@ sendKill :: User -> Str -> KevinIO ()
 sendHandshake = sendPacket
     Packet { command = "dAmnClient"
            , parameter = Just "0.3"
-           , args = [("agent","kevin 0.1")]
+           , args = [("agent","kevin " `B.append` VERSION)]
            , body = Nothing
            }
 

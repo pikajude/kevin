@@ -1,4 +1,4 @@
-module Kevin.Packet.Damn (
+module Kevin.Damn.Packet (
     Packet(..),
     parsePacket,
     subPacket,

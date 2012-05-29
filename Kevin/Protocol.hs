@@ -3,8 +3,8 @@ module Kevin.Protocol (kevinServer) where
 import Prelude hiding (putStrLn, catch)
 import Kevin.Base
 import Kevin.Util.Logger
-import qualified Kevin.Protocol.IRC as C
-import qualified Kevin.Protocol.Damn as S
+import qualified Kevin.IRC.Protocol as C
+import qualified Kevin.Damn.Protocol as S
 import System.IO (hSetBuffering, BufferMode(..))
 import Data.Map (fromList)
 
