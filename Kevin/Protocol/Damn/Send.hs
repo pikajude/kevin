@@ -26,19 +26,23 @@ module Kevin.Protocol.Damn.Send (
 
 import Kevin.Base
 import Kevin.Packet.Damn
+import Kevin.Util.Logger
 import qualified Data.ByteString.Char8 as B
 import Data.List (sort)
 import Data.Char (toLower)
+import Data.Maybe (isJust)
 
 sendPacket :: Packet -> KevinIO ()
 sendPacket p = getK >>= \k -> io $ writeServer k p
 
-formatRoom :: B.ByteString -> KevinIO B.ByteString
-formatRoom b = do
-    uname <- getsK (username . settings)
-    if B.head b == '#'
-        then return $ "chat:" `B.append` B.tail b
-        else return $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, b]
+formatRoom :: B.ByteString -> KevinIO (Maybe B.ByteString)
+formatRoom b = 
+    case B.splitAt 1 b of
+        ("#",s) -> return $ Just $ "chat:" `B.append` s
+        ("&",s) -> do
+            uname <- getsK (username . settings)
+            return $ Just $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, s]
+        _ -> return Nothing
 
 deformatRoom :: B.ByteString -> B.ByteString
 deformatRoom room = if "chat:" `B.isPrefixOf` room
@@ -83,11 +87,13 @@ sendLogin u token = sendPacket
 
 sendJoin room = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "join"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Nothing
-                      }
+    if isJust roomname
+        then sendPacket Packet { command = "join"
+                               , parameter = roomname
+                               , args = []
+                               , body = Nothing
+                               }
+        else io $ klogError "Malformed room name"
 
 sendPart = undefined
 sendPong = undefined
