@@ -2,7 +2,7 @@ module Kevin.Protocol (kevinServer) where
 
 import Prelude hiding (putStrLn, catch)
 import Kevin.Base
-import Kevin.Util.Logger
+import qualified Kevin.Util.Logger as L
 import qualified Kevin.IRC.Protocol as C
 import qualified Kevin.Damn.Protocol as S
 import System.IO (hSetBuffering, BufferMode(..))
@@ -12,11 +12,12 @@ mkKevin :: Socket -> IO Kevin
 mkKevin sock = withSocketsDo $ do
     (client, _, _) <- accept sock
     hSetBuffering client NoBuffering
-    klog Blue "received a client"
+    L.klogNow L.Blue "received a client"
     set <- execStateT (C.getAuthInfo client False) emptySettings
-    klog Blue $ "client info: " ++ show set
+    L.klogNow L.Blue $ "client info: " ++ show set
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
+    logChan <- newChan
     return Kevin { damn = damnSock
                  , irc = client
                  , settings = set
@@ -25,6 +26,7 @@ mkKevin sock = withSocketsDo $ do
                  , titles = mempty
                  , toJoin = mempty
                  , loggedIn = False
+                 , logger = logChan
                  }
 
 mkListener :: IO Socket
@@ -40,6 +42,7 @@ kevinServer = do
 listen :: Kevin -> IO ()
 listen kevin = do
     mvar <- newTVarIO kevin
+    L.runLogger (logger kevin)
     forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) mvar
     forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) mvar
     return ()

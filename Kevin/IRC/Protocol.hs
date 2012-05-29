@@ -15,7 +15,7 @@ import qualified Kevin.Damn.Protocol.Send as D
 type KevinState = StateT Settings IO
 
 cleanup :: KevinIO ()
-cleanup = io $ klog Green "cleanup client"
+cleanup = klog Green "cleanup client"
 
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
@@ -32,27 +32,26 @@ respond pkt "JOIN" = do
         else modifyK (addToJoin rooms)
     where
         rooms = B.split ',' $ head $ params pkt
-respond _ str = io $ klogError $ B.unpack str
+respond _ str = klogError $ B.unpack str
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [
     Handler (\(e :: KevinException) -> case e of
-        LostServer -> io $ klogError "Lost server connection, DCing client"
-        ParseFailure -> io $ klogError "Bad communication from client"
-        _ -> io $ klogError "Got the wrong exception"),
+        LostServer -> klogError "Lost server connection, DCing client"
+        ParseFailure -> klogError "Bad communication from client"
+        _ -> klogError "Got the wrong exception"),
         
-    Handler (\(e :: IOException) -> io $ klogError $ "client: " ++ show e)]
+    Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
 notice :: Handle -> B.ByteString -> IO ()
-notice h str = klog Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
+notice h str = klogNow Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
     where
         asStr = asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do
     pkt <- io $ fmap parsePacket $ B.hGetLine handle
-    io $ klog Yellow $ "client <- " ++ B.unpack (asStringC pkt)
     case command pkt of
         "PASS" -> do
             modify (setPassword $ head $ params pkt)
@@ -63,14 +62,12 @@ getAuthInfo handle authRetry = do
             modify (setUsername $ head $ params pkt)
             getAuthInfo handle False
         "USER" -> welcome handle
-        _ -> do
-            io $ klogError $ "invalid packet: " ++ show pkt
-            when authRetry $ getAuthInfo handle True
+        _ -> when authRetry $ getAuthInfo handle True
 
 welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- gets username
-    mapM_ (\x -> io $ klog Blue ("client -> " ++ B.unpack (asStringC x)) >> B.hPut handle (asStringC x)) [
+    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ B.unpack (asStringC x)) >> B.hPut handle (asStringC x)) [
         Packet { prefix = hostname
                , command = "001"
                , params = [nick, B.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]

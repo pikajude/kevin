@@ -4,26 +4,24 @@ module Kevin.Base (
     KevinException(..),
     KServerPacket(..),
     KClientPacket(..),
-    
-    -- * Kevin IO actions
-    readClient,
-    readServer,
-    writeClient,
-    writeServer,
-    closeClient,
-    closeServer,
+    KevinServer(..),
+    User,
+    Privclass,
+    Chatroom,
+    Title,
+    UserStore,
+    PrivclassStore,
+    TitleStore,
     
     -- * Modifiers
     addUser,
     removeUser,
     setUsers,
     onUsers,
-    User,
     
     setPrivclass,
     onPrivclasses,
     getPcLevel,
-    Privclass,
     
     logIn,
     
@@ -45,19 +43,23 @@ module Kevin.Base (
 
 import Kevin.Util.Logger
 import qualified Data.ByteString.Char8 as B
-import Data.Typeable
 import Data.List (intercalate, nub)
 import System.IO as K (Handle, hClose)
 import Control.Exception as K (IOException)
 import Network as K
 import Control.Monad.Reader
 import Control.Monad.State as K
-import Control.Monad.STM (atomically)
 import Control.Concurrent as K (forkIO)
+import Control.Concurrent.Chan as K
 import Control.Concurrent.STM.TVar as K
 import Control.Monad.CatchIO as K
 import Kevin.Settings as K
 import qualified Data.Map as M
+import Data.Typeable
+import Kevin.Types
+
+io :: MonadIO m => IO a -> m a
+io = liftIO
 
 class KServerPacket a where
     asStringS :: a -> B.ByteString
@@ -71,34 +73,12 @@ class KevinServer a where
     writeClient :: (KClientPacket p) => a -> p -> IO ()
     closeClient, closeServer :: a -> IO ()
 
-data Kevin = Kevin { damn :: Handle
-                   , irc :: Handle
-                   , settings :: Settings
-                   , users :: UserStore
-                   , privclasses :: PrivclassStore
-                   , titles :: TitleStore
-                   , toJoin :: [B.ByteString]
-                   , loggedIn :: Bool
-                   }
+data KevinException = LostClient | LostServer | ParseFailure
+    deriving (Show, Typeable)
 
-type KevinIO = StateT (TVar Kevin) IO
+instance Exception KevinException
 
-getK :: KevinIO Kevin
-getK = get >>= io . readTVarIO
-
-putK :: Kevin -> KevinIO ()
-putK k = get >>= io . atomically . flip writeTVar k
-
-getsK :: (Kevin -> a) -> KevinIO a
-getsK = flip liftM getK
-
-modifyK :: (Kevin -> Kevin) -> KevinIO ()
-modifyK f = do
-    var <- get
-    (io . atomically) $ modifyTVar var f
-
-io :: MonadIO m => IO a -> m a
-io = liftIO
+-- actions
                    
 padLines :: Int -> B.ByteString -> String
 padLines len b = let (first:rest) = lines $ B.unpack b in (++) (first ++ "\n") $ intercalate "\n" $ map (replicate len ' ' ++) rest
@@ -115,20 +95,20 @@ hGetSep sep h = do
 instance KevinServer Kevin where
     readClient k = do
         line <- B.hGetLine $ irc k
-        klog Yellow $ "client <- " ++ padLines 10 line
+        klog_ (logger k) Yellow $ "client <- " ++ padLines 10 line
         return $ B.init line
     readServer k = do
         line <- hGetSep '\x0' $ damn k
-        klog Cyan $ "server <- " ++ padLines 10 line
+        klog_ (logger k) Cyan $ "server <- " ++ padLines 10 line
         return line
     
     writeClient k str = do
         let pkt = asStringC str
-        klog Blue $ "client -> " ++ padLines 10 pkt
+        klog_ (logger k) Blue $ "client -> " ++ padLines 10 pkt
         B.hPut (irc k) pkt
     writeServer k str = do
         let pkt = asStringS str
-        klog Magenta $ "server -> " ++ padLines 10 pkt
+        klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
         B.hPut (damn k) pkt
     
     closeClient = hClose . irc
@@ -140,29 +120,12 @@ instance KServerPacket B.ByteString where
 instance KClientPacket B.ByteString where
     asStringC = id
 
-data KevinException = LostClient | LostServer | ParseFailure
-    deriving (Show, Typeable)
-
-instance Exception KevinException
-
 -- Kevin modifiers
 logIn :: Kevin -> Kevin
 logIn k = k { loggedIn = True }
 
 addToJoin :: [B.ByteString] -> Kevin -> Kevin
 addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
-
-type Chatroom = B.ByteString
-
-type User = (B.ByteString,Int)
-type UserStore = M.Map Chatroom [User]
-
-type Privclasses = M.Map B.ByteString Int
-type PrivclassStore = M.Map Chatroom Privclasses
-type Privclass = (B.ByteString, Int)
-
-type Title = B.ByteString
-type TitleStore = M.Map Chatroom Title
 
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
