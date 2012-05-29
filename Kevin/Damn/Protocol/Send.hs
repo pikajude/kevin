@@ -40,7 +40,7 @@ formatRoom b =
         ("&",s) -> do
             uname <- getsK (username . settings)
             return $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, s]
-        r@(_,_) -> return $ "chat" `B.append` uncurry B.append r
+        r -> return $ "chat" `B.append` uncurry B.append r
 
 deformatRoom :: B.ByteString -> B.ByteString
 deformatRoom room = if "chat:" `B.isPrefixOf` room
