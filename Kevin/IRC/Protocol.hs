@@ -29,8 +29,7 @@ respond pkt "JOIN" = do
     l <- getsK loggedIn
     if l
         then mapM_ D.sendJoin rooms
-        else do
-            modifyK (addToJoin rooms)
+        else modifyK (addToJoin rooms)
     where
         rooms = B.split ',' $ head $ params pkt
 respond _ str = io $ klogError $ B.unpack str
