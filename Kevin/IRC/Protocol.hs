@@ -85,11 +85,11 @@ welcome handle = do
                },
         Packet { prefix = hostname
                , command = "004"
-               , params = [nick, "chat.deviantart.com", "dAmnServer0.3", "qaohv", "i"]
+               , params = [nick, "chat.deviantart.com", "dAmnServer0.3", "qov", "i"]
                },
         Packet { prefix = hostname
                , command = "005"
-               , params = [nick, "PREFIX=(qaohv)~&@%+"]
+               , params = [nick, "PREFIX=(qov)~@+"]
                },
         Packet { prefix = hostname
                , command = "375"

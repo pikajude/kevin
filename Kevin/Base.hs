@@ -14,11 +14,21 @@ module Kevin.Base (
     closeServer,
     
     -- * Modifiers
+    addUser,
+    removeUser,
+    setUsers,
+    onUsers,
+    User,
+    
     setPrivclass,
     onPrivclasses,
+    getPcLevel,
     Privclass,
+    
     logIn,
+    
     addToJoin,
+    
     setTitle,
     onTitles,
     
@@ -64,13 +74,13 @@ class KevinServer a where
 data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
                    , settings :: Settings
+                   , users :: UserStore
                    , privclasses :: PrivclassStore
                    , titles :: TitleStore
                    , toJoin :: [B.ByteString]
                    , loggedIn :: Bool
                    }
 
-type Privclass = (B.ByteString, Int)
 type KevinIO = StateT (TVar Kevin) IO
 
 getK :: KevinIO Kevin
@@ -143,17 +153,41 @@ addToJoin :: [B.ByteString] -> Kevin -> Kevin
 addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
 
 type Chatroom = B.ByteString
+
+type User = (B.ByteString,Int)
+type UserStore = M.Map Chatroom [User]
+
 type Privclasses = M.Map B.ByteString Int
 type PrivclassStore = M.Map Chatroom Privclasses
+type Privclass = (B.ByteString, Int)
 
 type Title = B.ByteString
 type TitleStore = M.Map Chatroom Title
+
+addUser :: Chatroom -> User -> UserStore -> UserStore
+addUser = (. return) . M.insertWith (++)
+
+removeUser :: Chatroom -> User -> UserStore -> UserStore
+removeUser room us = M.adjust (removeOne' (\x -> fst x == fst us)) room
+
+removeOne' :: (User -> Bool) -> [User] -> [User]
+removeOne' _ [] = []
+removeOne' f (x:xs) = if f x then xs else x:removeOne' f xs
+
+setUsers :: Chatroom -> [User] -> UserStore -> UserStore
+setUsers = M.insert
+
+onUsers :: (UserStore -> UserStore) -> Kevin -> Kevin
+onUsers f k = k { users = f (users k) }
 
 setPrivclass :: Chatroom -> Privclass -> PrivclassStore -> PrivclassStore
 setPrivclass room (p,i) = M.insertWith M.union room (M.singleton p i)
 
 onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
 onPrivclasses f k = k { privclasses = f (privclasses k) }
+
+getPcLevel :: Chatroom -> B.ByteString -> PrivclassStore -> Maybe Int
+getPcLevel room pcname store = M.lookup room store >>= M.lookup pcname
 
 setTitle :: Chatroom -> Title -> TitleStore -> TitleStore
 setTitle = M.insert

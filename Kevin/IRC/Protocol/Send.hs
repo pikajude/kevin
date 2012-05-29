@@ -21,15 +21,15 @@ sendPacket p = getK >>= \k -> io $ writeClient k p
 
 type Str = B.ByteString
 type Room = Str
-type User = Str
+type Username = Str
 
-sendJoin, sendPart :: User -> Room -> KevinIO ()
-sendChanMsg :: User -> Room -> Str -> KevinIO ()
-sendPrivMsg :: User -> Str -> KevinIO ()
-sendKick :: User -> Room -> Maybe Str -> KevinIO ()
-sendPromote :: User -> Room -> Privclass -> Privclass -> KevinIO ()
-sendTopic :: User -> Room -> User -> Str -> Str -> KevinIO ()
-sendUserList :: [(User,Str)] -> Room -> KevinIO ()
+sendJoin, sendPart :: Username -> Room -> KevinIO ()
+sendChanMsg :: Username -> Room -> Str -> KevinIO ()
+sendPrivMsg :: Username -> Str -> KevinIO ()
+sendKick :: Username -> Room -> Maybe Str -> KevinIO ()
+sendPromote :: Username -> Room -> Privclass -> Privclass -> KevinIO ()
+sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
+sendUserList :: Username -> [(Username,Int)] -> Room -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = Just $ B.concat [us, "!", us, "@chat.deviantart.com"]
@@ -50,4 +50,27 @@ sendTopic us rm maker top startdate = sendPacket
            , command = "333"
            , params = [us, rm, maker, startdate]
            }
-sendUserList = undefined
+sendUserList us uss rm = sendPacket
+    Packet { prefix = hostname
+           , command = "353"
+           , params = [us, "=", rm, B.intercalate " " (map (\(name,level) -> B.concat [levelToSym level, name]) uss)]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "366"
+           , params = [us, rm, "End of NAMES list."]
+           }
+
+levelToSym :: Int -> B.ByteString
+levelToSym x | x > 0  && x <= 10 = ""
+             | x > 10 && x <= 70 = "+"
+             | x > 70 && x <  99 = "@"
+             | x == 99           = "~"
+             | otherwise         = ""
+
+levelToMode :: Int -> B.ByteString
+levelToMode x = case levelToSym x of
+   "" -> ""
+   "+" -> "v"
+   "@" -> "o"
+   "~" -> "q"
+   _ -> error "levelToSym, what are you doing"

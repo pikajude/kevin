@@ -20,6 +20,7 @@ mkKevin sock = withSocketsDo $ do
     return Kevin { damn = damnSock
                  , irc = client
                  , settings = set
+                 , users = mempty
                  , privclasses = mempty
                  , titles = mempty
                  , toJoin = mempty

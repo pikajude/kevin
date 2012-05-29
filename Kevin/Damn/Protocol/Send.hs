@@ -49,25 +49,25 @@ deformatRoom room = if "chat:" `B.isPrefixOf` room
 
 type Str = B.ByteString -- just make it shorter
 type Room = Str
-type User = Str
+type Username = Str
 type Pc = Str
 
 -- * Communication to the server
 sendHandshake :: KevinIO ()
-sendLogin :: User -> Str -> KevinIO ()
+sendLogin :: Username -> Str -> KevinIO ()
 sendJoin :: Room -> KevinIO ()
 sendPart :: Room -> Maybe Str -> KevinIO ()
 sendPong :: KevinIO ()
 sendMsg, sendAction, sendNpMsg :: Room -> Str -> KevinIO ()
-sendPromote, sendDemote :: Room -> User -> Pc -> KevinIO ()
-sendBan, sendUnban :: Room -> User -> KevinIO ()
-sendKick :: Room -> User -> Str -> KevinIO ()
+sendPromote, sendDemote :: Room -> Username -> Pc -> KevinIO ()
+sendBan, sendUnban :: Room -> Username -> KevinIO ()
+sendKick :: Room -> Username -> Str -> KevinIO ()
 sendGetProperty :: Room -> Str -> KevinIO ()
-sendWhois :: User -> KevinIO ()
+sendWhois :: Username -> KevinIO ()
 sendSet :: Room -> Str -> Str -> KevinIO ()
 sendAdmin :: Room -> Str -> KevinIO ()
 sendDisconnect :: KevinIO ()
-sendKill :: User -> Str -> KevinIO ()
+sendKill :: Username -> Str -> KevinIO ()
 
 sendHandshake = sendPacket
     Packet { command = "dAmnClient"

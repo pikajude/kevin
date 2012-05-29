@@ -10,6 +10,7 @@ import Kevin.Util.Logger
 import Kevin.Damn.Packet
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromJust)
+import Data.List (nub)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
 
@@ -52,14 +53,20 @@ respond pkt "join" = if okay pkt
 respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses $ fromJust $ body pkt
-        modifyK (onPrivclasses (foldr (.) id (map (setPrivclass roomname) pcs)))
+        modifyK (onPrivclasses (foldr ((.) . setPrivclass roomname) id pcs))
     "topic" -> do
         uname <- getsK (username . settings)
         I.sendTopic uname roomname (getArg "by" pkt) (fromJust (body pkt)) (getArg "ts" pkt)
     "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
     "members" -> do
+        pcs <- getsK privclasses
         let members = map parsePacket $ init $ splitOn "\n\n" $ fromJust (body pkt)
-        io $ print members
+            pairs = map (\m -> (fromJust $ parameter m, fromJust $ getPcLevel roomname (getArg "pc" m) pcs)) members
+        modifyK (onUsers (setUsers roomname pairs))
+        uname <- getsK (username . settings)
+        I.sendUserList uname (nub pairs) roomname
+    x | "login:" `B.isPrefixOf` x -> io $ klog Blue "got user info"
+    q -> io $ klogError $ "Unrecognized property " ++ B.unpack q
     where
         roomname = (deformatRoom . fromJust . parameter) pkt
 

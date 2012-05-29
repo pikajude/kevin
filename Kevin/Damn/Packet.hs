@@ -68,10 +68,10 @@ okay :: Packet -> Bool
 okay (Packet _ _ a _) = let e = lookup "e" a in isNothing e || e == Just "ok"
 
 getArg :: B.ByteString -> Packet -> B.ByteString
-getArg b p = maybe "" id $ lookup b (args p)
+getArg b p = fromMaybe "" $ lookup b (args p)
 
 parsePrivclasses :: B.ByteString -> [Privclass]
-parsePrivclasses = map (liftM2 (,) (!! 0) (read . B.unpack . (!! 1)) . B.split ':') . B.split '\n'
+parsePrivclasses = map (liftM2 (,) (!! 1) (read . B.unpack . (!! 0)) . B.split ':') . filter (not . B.null) . B.split '\n'
 
 splitOn :: B.ByteString -> B.ByteString -> [B.ByteString]
 splitOn delim str = if B.null l then [f] else f:splitOn delim (B.drop (B.length delim) l)
