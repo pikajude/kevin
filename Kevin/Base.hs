@@ -13,11 +13,11 @@ module Kevin.Base (
     closeClient,
     closeServer,
     
-    -- * Modify helpers
-    -- *   Privclasses
+    -- * Privclasses
     setPrivclass,
     onPrivclasses,
-    -- *   Other
+    Privclass,
+    -- * Other
     logIn,
     addToJoin,
     
@@ -68,6 +68,7 @@ data Kevin = Kevin { damn :: Handle
                    , loggedIn :: Bool
                    }
 
+type Privclass = (B.ByteString, Int)
 type KevinIO = StateT (TVar Kevin) IO
 
 getK :: KevinIO Kevin

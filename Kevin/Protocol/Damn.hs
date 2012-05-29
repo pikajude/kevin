@@ -11,6 +11,7 @@ import Kevin.Packet.Damn
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromJust)
 import Kevin.Protocol.Damn.Send
+import qualified Kevin.Protocol.IRC.Send as I
 
 initialize :: KevinIO ()
 initialize = sendHandshake
@@ -25,6 +26,7 @@ listen = flip catches errHandlers $ do
     respond pkt (command pkt)
     listen
 
+-- main responder
 respond :: Packet -> B.ByteString -> KevinIO ()
 respond _ "dAmnServer" = do
     set <- getsK settings
@@ -40,7 +42,15 @@ respond pkt "login" = do
             modifyK logIn
             getsK toJoin >>= mapM_ sendJoin
         else io $ klogError $ "Login failed: " ++ B.unpack (fromJust $ getArg "e" pkt)
+
+respond pkt "join" = if okay pkt
+    then do
+        uname <- getsK (username . settings)
+        (I.sendJoin uname . deformatRoom . fromJust) $ parameter pkt
+    else io $ klogError $ "Join failed: " ++ B.unpack (fromJust $ getArg "e" pkt)
+
 respond _ str = io $ print $ "Got the packet called " `B.append` str
+
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [Handler (\(e :: KevinException) -> case e of

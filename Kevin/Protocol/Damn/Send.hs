@@ -1,5 +1,7 @@
 module Kevin.Protocol.Damn.Send (
     sendPacket,
+    formatRoom,
+    deformatRoom,
     
     sendHandshake,
     sendLogin,
@@ -37,6 +39,11 @@ formatRoom b = do
     if B.head b == '#'
         then return $ "chat:" `B.append` B.tail b
         else return $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, b]
+
+deformatRoom :: B.ByteString -> B.ByteString
+deformatRoom room = if "chat:" `B.isPrefixOf` room
+    then '#' `B.cons` B.drop 5 room
+    else '&' `B.cons` (last $ B.split ',' room)
 
 type Str = B.ByteString -- just make it shorter
 type Room = Str
