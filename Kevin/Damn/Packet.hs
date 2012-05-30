@@ -37,7 +37,7 @@ parseArgs = many $ do
     char '\n'
     c <- takeTill (=='=')
     char '='
-    r <- takeTill isSpace
+    r <- takeTill (=='\n')
     return (c,r)
 
 parseHead :: Parser Packet
