@@ -16,7 +16,7 @@ decodeCharacter = entityNumeric <|> entityNamed <|> take 1
 entityNumeric :: Parser T.Text
 entityNumeric = do
     string "&#"
-    entity <- takeWhile1 (inClass "xa-fA-F0-9")
+    entity <- option "" (string "x") >> takeWhile1 (inClass "a-fA-F0-9")
     char ';'
     return $ maybe "?" T.singleton $ lookupNumericEntity $ T.unpack entity
 
