@@ -5,7 +5,6 @@ module Kevin.Util.Entities (
 
 import Prelude hiding (take)
 import Text.HTML.TagSoup.Entity
-import Codec.Binary.UTF8.String (encodeString)
 import qualified Data.Text as T
 import Data.Attoparsec.Text
 import Data.Char
@@ -19,7 +18,7 @@ entityNumeric = do
     string "&#"
     entity <- takeWhile1 (inClass "xa-fA-F0-9")
     char ';'
-    return $ maybe "?" (T.pack . encodeString . return) $ lookupNumericEntity $ T.unpack entity
+    return $ maybe "?" (T.pack . return) $ lookupNumericEntity $ T.unpack entity
 
 entityNamed :: Parser T.Text
 entityNamed = do
