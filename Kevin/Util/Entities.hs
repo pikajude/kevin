@@ -8,7 +8,7 @@ import Text.HTML.TagSoup.Entity
 import qualified Data.Text as T
 import Data.Attoparsec.Text
 import Data.Char
-import Control.Applicative ((<|>), (<$>))
+import Control.Applicative ((<|>), (<$>), (<*>))
 
 decodeCharacter :: Parser T.Text
 decodeCharacter = entityNumeric <|> entityNamed <|> take 1
@@ -16,7 +16,7 @@ decodeCharacter = entityNumeric <|> entityNamed <|> take 1
 entityNumeric :: Parser T.Text
 entityNumeric = do
     string "&#"
-    entity <- option "" (string "x") >> takeWhile1 (inClass "a-fA-F0-9")
+    entity <- T.append <$> option "" (string "x") <*> takeWhile1 (inClass "a-fA-F0-9")
     char ';'
     return $ maybe "?" T.singleton $ lookupNumericEntity $ T.unpack entity
 
