@@ -18,6 +18,7 @@ module Kevin.Base (
     removeUser,
     setUsers,
     onUsers,
+    numUsers,
     
     setPrivclass,
     onPrivclasses,
@@ -47,7 +48,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr)
 import qualified Data.ByteString.Char8 as T (hGetLine)
 import qualified Data.Text.Encoding as T
-import Data.List (intercalate, nub)
+import Data.List (intercalate, nub, findIndices)
 import System.IO as K (Handle, hClose, hGetChar)
 import Control.Exception as K (IOException)
 import Network as K
@@ -136,6 +137,11 @@ addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
 
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
+
+numUsers :: Chatroom -> T.Text -> UserStore -> Int
+numUsers room us st = case M.lookup room st of
+    Just usrs -> length $ findIndices (\u -> us == username u) usrs
+    Nothing -> 0
 
 removeUser :: Chatroom -> T.Text -> UserStore -> UserStore
 removeUser room us = M.adjust (removeOne' (\x -> username x == us)) room

@@ -10,7 +10,8 @@ module Kevin.IRC.Protocol.Send (
     sendChanMode,
     sendUserList,
     sendWhoList,
-    sendPong
+    sendPong,
+    sendNoticeClone
 ) where
     
 import Kevin.Base
@@ -41,9 +42,10 @@ sendChanMode :: Username -> Room -> KevinIO ()
 sendUserList :: Username -> [User] -> Room -> KevinIO ()
 sendWhoList :: Username -> [User] -> Room -> KevinIO ()
 sendPong :: T.Text -> KevinIO ()
+sendNoticeClone :: Username -> Int -> Room -> KevinIO ()
 
 sendJoin us rm = sendPacket
-    Packet { prefix = Just $ T.concat [us, "!", us, "@chat.deviantart.com"]
+    Packet { prefix = getHost us
            , command = "JOIN"
            , params = [rm]
            }
@@ -109,6 +111,12 @@ sendPong p = sendPacket
     Packet { prefix = hostname
            , command = "PONG"
            , params = ["chat.deviantart.com", p `T.snoc` ' ']
+           }
+
+sendNoticeClone uname i rm = sendPacket
+    Packet { prefix = hostname
+           , command = "NOTICE"
+           , params = [rm, T.concat [uname, " has joined again (now joined ", T.pack $ show i, " times)"]]
            }
 
 levelToSym :: Int -> T.Text

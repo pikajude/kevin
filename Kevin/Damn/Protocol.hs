@@ -54,28 +54,45 @@ respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses $ fromJust $ body pkt
         modifyK (onPrivclasses (foldr ((.) . setPrivclass roomname) id pcs))
+        
     "topic" -> do
         uname <- getsK (getUsername . settings)
         I.sendTopic uname roomname (getArg "by" pkt) (fromJust (body pkt)) (getArg "ts" pkt)
+        
     "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
+    
     "members" -> do
         (pcs,uname) <- getsK (privclasses &&& getUsername . settings)
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
         modifyK (onUsers (setUsers roomname members))
         I.sendUserList uname (nub members) roomname
         I.sendWhoList uname (nub members) roomname
+        
     x | "login:" `T.isPrefixOf` x -> klog Blue "got user info"
+    
     q -> klogError $ "Unrecognized property " ++ T.unpack q
-    where
-        roomname = (deformatRoom . fromJust . parameter) pkt
+    
+    where roomname = (deformatRoom . fromJust . parameter) pkt
 
 respond spk "recv" = case command pkt of
+    "join" -> do
+        pcs <- getsK privclasses
+        let us = mkUser roomname pcs modifiedPkt
+        modifyK (onUsers (addUser roomname us))
+        countUser <- getsK (\k -> numUsers roomname (username us) (users k))
+        if countUser == 1
+            then I.sendJoin (fromJust (parameter pkt)) roomname
+            else I.sendNoticeClone (username us) countUser roomname
+            
     "msg" -> let uname = getArg "from" pkt
                  msg   = fromJust (body pkt)
              in I.sendChanMsg uname roomname msg
+             
     x -> klogError $ "Haven't yet handled " ++ T.unpack x
+    
     where
         pkt = fromJust $ subPacket spk
+        modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" (fromJust $ body spk))
         roomname = (deformatRoom . fromJust . parameter) spk
 
 respond _ "ping" = getK >>= \k -> io $ writeServer k ("pong\n\0" :: T.Text)
