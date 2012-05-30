@@ -18,7 +18,7 @@ entityNumeric = do
     string "&#"
     entity <- takeWhile1 (inClass "xa-fA-F0-9")
     char ';'
-    return $ maybe "?" (T.pack . return) $ lookupNumericEntity $ T.unpack entity
+    return $ maybe "?" T.singleton $ lookupNumericEntity $ T.unpack entity
 
 entityNamed :: Parser T.Text
 entityNamed = do
