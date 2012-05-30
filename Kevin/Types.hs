@@ -25,8 +25,8 @@ import Kevin.Settings
 
 data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
-				   , dChan :: Chan T.Text
-				   , iChan :: Chan T.Text
+                   , dChan :: Chan T.Text
+                   , iChan :: Chan T.Text
                    , settings :: Settings
                    , users :: UserStore
                    , privclasses :: PrivclassStore
