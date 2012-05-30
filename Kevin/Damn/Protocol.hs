@@ -38,19 +38,17 @@ respond _ "dAmnServer" = do
     sendLogin uname token
 
 respond pkt "login" = do
-    uname <- getsK (getUsername . settings)
     if okay pkt
         then do
-            klog Green $ "Logged in as " ++ T.unpack uname
             modifyK logIn
             getsK toJoin >>= mapM_ sendJoin
-        else klogError $ "Login failed: " ++ T.unpack (getArg "e" pkt)
+        else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = if okay pkt
     then do
         uname <- getsK (getUsername . settings)
         (I.sendJoin uname . deformatRoom . fromJust) $ parameter pkt
-    else klogError $ "Join failed: " ++ T.unpack (getArg "e" pkt)
+    else I.sendNotice $ "Join failed: " `T.append` getArg "e" pkt
 
 respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do

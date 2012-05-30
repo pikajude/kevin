@@ -1,6 +1,7 @@
 module Kevin.IRC.Protocol.Send (
     sendJoin,
     sendPart,
+    sendNotice,
     sendChanMsg,
     sendPrivMsg,
     sendKick,
@@ -27,6 +28,7 @@ type Room = Str
 type Username = Str
 
 sendJoin, sendPart :: Username -> Room -> KevinIO ()
+sendNotice :: Str -> KevinIO ()
 sendChanMsg :: Username -> Room -> Str -> KevinIO ()
 sendPrivMsg :: Username -> Str -> KevinIO ()
 sendKick :: Username -> Room -> Maybe Str -> KevinIO ()
@@ -44,6 +46,13 @@ sendJoin us rm = sendPacket
            }
 
 sendPart = undefined
+
+sendNotice str = sendPacket
+    Packet { prefix = Nothing
+           , command = "NOTICE"
+           , params = ["AUTH", str `T.snoc` ' ']
+           }
+
 sendChanMsg = undefined
 sendPrivMsg = undefined
 sendKick = undefined
