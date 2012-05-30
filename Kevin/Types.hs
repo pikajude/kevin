@@ -14,7 +14,7 @@ module Kevin.Types (
     modifyK
 ) where
     
-import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 import qualified Data.Map as M
 import System.IO
 import Control.Concurrent
@@ -29,7 +29,7 @@ data Kevin = Kevin { damn :: Handle
                    , users :: UserStore
                    , privclasses :: PrivclassStore
                    , titles :: TitleStore
-                   , toJoin :: [B.ByteString]
+                   , toJoin :: [T.Text]
                    , loggedIn :: Bool
                    , logger :: Chan String
                    }
@@ -53,21 +53,21 @@ modifyK f = do
 io :: MonadIO m => IO a -> m a
 io = liftIO
 
-type Chatroom = B.ByteString
+type Chatroom = T.Text
 
-data User = User { username :: B.ByteString
-                 , privclass :: B.ByteString
+data User = User { username :: T.Text
+                 , privclass :: T.Text
                  , privclassLevel :: Int
-                 , symbol :: B.ByteString
-                 , realname :: B.ByteString
-                 , typename :: B.ByteString
-                 , gpc :: B.ByteString
+                 , symbol :: T.Text
+                 , realname :: T.Text
+                 , typename :: T.Text
+                 , gpc :: T.Text
                  } deriving (Eq)
 type UserStore = M.Map Chatroom [User]
 
-type Privclasses = M.Map B.ByteString Int
+type Privclasses = M.Map T.Text Int
 type PrivclassStore = M.Map Chatroom Privclasses
-type Privclass = (B.ByteString, Int)
+type Privclass = (T.Text, Int)
 
-type Title = B.ByteString
+type Title = T.Text
 type TitleStore = M.Map Chatroom Title

@@ -13,15 +13,15 @@ module Kevin.IRC.Protocol.Send (
     
 import Kevin.Base
 import Kevin.IRC.Packet
-import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 
-hostname :: Maybe B.ByteString
+hostname :: Maybe T.Text
 hostname = Just "chat.deviantart.com"
 
 sendPacket :: Packet -> KevinIO ()
 sendPacket p = getK >>= \k -> io $ writeClient k p
 
-type Str = B.ByteString
+type Str = T.Text
 type Room = Str
 type Username = Str
 
@@ -36,7 +36,7 @@ sendUserList :: Username -> [User] -> Room -> KevinIO ()
 sendWhoList :: Username -> [User] -> Room -> KevinIO ()
 
 sendJoin us rm = sendPacket
-    Packet { prefix = Just $ B.concat [us, "!", us, "@chat.deviantart.com"]
+    Packet { prefix = Just $ T.concat [us, "!", us, "@chat.deviantart.com"]
            , command = "JOIN"
            , params = [rm]
            }
@@ -50,7 +50,7 @@ sendPromote = undefined
 sendTopic us rm maker top startdate = sendPacket
     Packet { prefix = hostname
            , command = "332"
-           , params = [us, rm, top `B.snoc` ' ']
+           , params = [us, rm, top `T.snoc` ' ']
            } >> sendPacket
     Packet { prefix = hostname
            , command = "333"
@@ -70,7 +70,7 @@ sendChanMode us rm = sendPacket
 sendUserList us uss rm = sendPacket
     Packet { prefix = hostname
            , command = "353"
-           , params = [us, "=", rm, B.intercalate " " (map (\u -> B.concat [levelToSym $ privclassLevel u, username u]) uss)]
+           , params = [us, "=", rm, T.intercalate " " (map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss)]
            } >> sendPacket
     Packet { prefix = hostname
            , command = "366"
@@ -80,21 +80,21 @@ sendUserList us uss rm = sendPacket
 sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
     Packet { prefix = hostname
            , command = "352"
-           , params = [us, rm, username u, "chat.deviantart.com", "chat.deviantart.com", username u, "Hr" `B.append` symbol u, "0 " `B.append` realname u]
+           , params = [us, rm, username u, "chat.deviantart.com", "chat.deviantart.com", username u, "Hr" `T.append` symbol u, "0 " `T.append` realname u]
            })) uss >> sendPacket
     Packet { prefix = hostname
            , command = "315"
            , params = [us, rm, "End of WHO list."]
            }
 
-levelToSym :: Int -> B.ByteString
+levelToSym :: Int -> T.Text
 levelToSym x | x > 0  && x <= 10 = ""
              | x > 10 && x <= 70 = "+"
              | x > 70 && x <  99 = "@"
              | x == 99           = "~"
              | otherwise         = ""
 
-levelToMode :: Int -> B.ByteString
+levelToMode :: Int -> T.Text
 levelToMode x = case levelToSym x of
    "" -> ""
    "+" -> "v"

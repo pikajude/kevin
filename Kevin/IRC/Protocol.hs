@@ -5,7 +5,8 @@ module Kevin.IRC.Protocol (
     getAuthInfo
 ) where
 
-import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Util.Token
@@ -24,15 +25,15 @@ listen = flip catches errHandlers $ do
     respond pkt (command pkt)
     listen
 
-respond :: Packet -> B.ByteString -> KevinIO ()
+respond :: Packet -> T.Text -> KevinIO ()
 respond pkt "JOIN" = do
     l <- getsK loggedIn
     if l
         then mapM_ D.sendJoin rooms
         else modifyK (addToJoin rooms)
     where
-        rooms = B.split ',' $ head $ params pkt
-respond _ str = klogError $ B.unpack str
+        rooms = T.splitOn "," $ head $ params pkt
+respond _ str = klogError $ T.unpack str
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [
@@ -44,15 +45,15 @@ errHandlers = [
     Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
-notice :: Handle -> B.ByteString -> IO ()
-notice h str = klogNow Blue ("client -> " ++ B.unpack asStr) >> B.hPut h asStr
+notice :: Handle -> T.Text -> IO ()
+notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h asStr
     where
         asStr = asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do
-    pkt <- io $ fmap parsePacket $ B.hGetLine handle
-    io $ klogNow Yellow $ "client <- " ++ B.unpack (asStringC pkt)
+    pkt <- io $ fmap parsePacket $ T.hGetLine handle
+    io $ klogNow Yellow $ "client <- " ++ T.unpack (asStringC pkt)
     case command pkt of
         "PASS" -> do
             modify (setPassword $ head $ params pkt)
@@ -70,10 +71,10 @@ getAuthInfo handle authRetry = do
 welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- gets getUsername
-    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ B.unpack (asStringC x)) >> B.hPut handle (asStringC x)) [
+    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ T.unpack (asStringC x)) >> T.hPutStr handle (asStringC x)) [
         Packet { prefix = hostname
                , command = "001"
-               , params = [nick, B.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]
+               , params = [nick, T.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]
                },
         Packet { prefix = hostname
                , command = "002"
@@ -97,7 +98,7 @@ welcome handle = do
                },
         Packet { prefix = hostname
                , command = "372"
-               , params = [nick, "- deviantART chat on IRC brought to you by kevin" `B.append` VERSION `B.append` ", created"]
+               , params = [nick, "- deviantART chat on IRC brought to you by kevin" `T.append` VERSION `T.append` ", created"]
                },
         Packet { prefix = hostname
                , command = "375"

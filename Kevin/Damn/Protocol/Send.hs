@@ -26,28 +26,28 @@ module Kevin.Damn.Protocol.Send (
 
 import Kevin.Base
 import Kevin.Damn.Packet
-import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 import Data.List (sort)
 import Data.Char (toLower)
 
 sendPacket :: Packet -> KevinIO ()
 sendPacket p = getK >>= \k -> io $ writeServer k p
 
-formatRoom :: B.ByteString -> KevinIO B.ByteString
+formatRoom :: T.Text -> KevinIO T.Text
 formatRoom b = 
-    case B.splitAt 1 b of
-        ("#",s) -> return $ "chat:" `B.append` s
+    case T.splitAt 1 b of
+        ("#",s) -> return $ "chat:" `T.append` s
         ("&",s) -> do
             uname <- getsK (getUsername . settings)
-            return $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, s]
-        r -> return $ "chat" `B.append` uncurry B.append r
+            return $ T.append "pchat:" $ T.intercalate ":" $ sort $ map (T.map toLower) [uname, s]
+        r -> return $ "chat" `T.append` uncurry T.append r
 
-deformatRoom :: B.ByteString -> B.ByteString
-deformatRoom room = if "chat:" `B.isPrefixOf` room
-    then '#' `B.cons` B.drop 5 room
-    else '&' `B.cons` last (B.split ',' room)
+deformatRoom :: T.Text -> T.Text
+deformatRoom room = if "chat:" `T.isPrefixOf` room
+    then '#' `T.cons` T.drop 5 room
+    else '&' `T.cons` last (T.splitOn "," room)
 
-type Str = B.ByteString -- just make it shorter
+type Str = T.Text -- just make it shorter
 type Room = Str
 type Username = Str
 type Pc = Str
@@ -72,7 +72,7 @@ sendKill :: Username -> Str -> KevinIO ()
 sendHandshake = sendPacket
     Packet { command = "dAmnClient"
            , parameter = Just "0.3"
-           , args = [("agent","kevin " `B.append` VERSION)]
+           , args = [("agent","kevin " `T.append` VERSION)]
            , body = Nothing
            }
 

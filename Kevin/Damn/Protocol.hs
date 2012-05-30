@@ -8,7 +8,7 @@ module Kevin.Damn.Protocol (
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Damn.Packet
-import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 import Data.Maybe (fromJust)
 import Data.List (nub)
 import Kevin.Damn.Protocol.Send
@@ -29,7 +29,7 @@ listen = flip catches errHandlers $ do
     listen
 
 -- main responder
-respond :: Packet -> B.ByteString -> KevinIO ()
+respond :: Packet -> T.Text -> KevinIO ()
 respond _ "dAmnServer" = do
     set <- getsK settings
     let uname = getUsername set
@@ -40,16 +40,16 @@ respond pkt "login" = do
     uname <- getsK (getUsername . settings)
     if okay pkt
         then do
-            klog Green $ "Logged in as " ++ B.unpack uname
+            klog Green $ "Logged in as " ++ T.unpack uname
             modifyK logIn
             getsK toJoin >>= mapM_ sendJoin
-        else klogError $ "Login failed: " ++ B.unpack (getArg "e" pkt)
+        else klogError $ "Login failed: " ++ T.unpack (getArg "e" pkt)
 
 respond pkt "join" = if okay pkt
     then do
         uname <- getsK (getUsername . settings)
         (I.sendJoin uname . deformatRoom . fromJust) $ parameter pkt
-    else klogError $ "Join failed: " ++ B.unpack (getArg "e" pkt)
+    else klogError $ "Join failed: " ++ T.unpack (getArg "e" pkt)
 
 respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do
@@ -65,12 +65,12 @@ respond pkt "property" = case getArg "p" pkt of
         modifyK (onUsers (setUsers roomname members))
         I.sendUserList uname (nub members) roomname
         I.sendWhoList uname (nub members) roomname
-    x | "login:" `B.isPrefixOf` x -> klog Blue "got user info"
-    q -> klogError $ "Unrecognized property " ++ B.unpack q
+    x | "login:" `T.isPrefixOf` x -> klog Blue "got user info"
+    q -> klogError $ "Unrecognized property " ++ T.unpack q
     where
         roomname = (deformatRoom . fromJust . parameter) pkt
 
-respond _ str = io $ print $ "Got the packet called " `B.append` str
+respond _ str = io $ print $ "Got the packet called " `T.append` str
 
 mkUser :: Chatroom -> PrivclassStore -> Packet -> User
 mkUser room st p = User (fromJust $ parameter p)

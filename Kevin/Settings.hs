@@ -6,11 +6,11 @@ module Kevin.Settings (
     setPassword
 ) where
     
-import Data.ByteString.Char8
+import Data.Text
 
-data Settings = Settings { getUsername :: ByteString
-                         , getPassword :: ByteString
-                         , getAuthtoken :: ByteString
+data Settings = Settings { getUsername :: Text
+                         , getPassword :: Text
+                         , getAuthtoken :: Text
                          } deriving (Show)
 
 emptySettings :: Settings
@@ -19,7 +19,7 @@ emptySettings = Settings { getUsername = ""
                          , getAuthtoken = ""
                          }
 
-setUsername, setAuthtoken, setPassword :: ByteString -> Settings -> Settings
+setUsername, setAuthtoken, setPassword :: Text -> Settings -> Settings
 
 setUsername  str set = set { getUsername  = str }
 setAuthtoken str set = set { getAuthtoken = str }

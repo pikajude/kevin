@@ -5,32 +5,32 @@ module Kevin.Util.Entities (
 
 import Text.HTML.TagSoup.Entity
 import Codec.Binary.UTF8.String (encode, encodeString)
-import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 import Data.Attoparsec.ByteString.Char8
 import Data.Word
 import Control.Applicative ((<|>), (<$>))
 
-decodeCharacter :: Parser B.ByteString
+decodeCharacter :: Parser T.Text
 decodeCharacter = entityNumeric <|> entityNamed <|> Data.Attoparsec.ByteString.Char8.take 1
 
-entityNumeric :: Parser B.ByteString
+entityNumeric :: Parser T.Text
 entityNumeric = do
     string "&#"
     entity <- takeWhile1 (inClass "xa-fA-F0-9")
     char ';'
-    return $ maybe "?" (B.pack . encodeString . return) $ lookupNumericEntity $ B.unpack entity
+    return $ maybe "?" (T.pack . encodeString . return) $ lookupNumericEntity $ T.unpack entity
 
-entityNamed :: Parser B.ByteString
+entityNamed :: Parser T.Text
 entityNamed = do
     char '&'
     entity <- takeWhile1 isAlpha_ascii
     char ';'
-    return $ maybe "?" B.singleton $ lookupNamedEntity $ B.unpack entity
+    return $ maybe "?" T.singleton $ lookupNamedEntity $ T.unpack entity
 
-decodeParser :: Parser B.ByteString
-decodeParser = B.concat <$> many1 decodeCharacter
+decodeParser :: Parser T.Text
+decodeParser = T.concat <$> many1 decodeCharacter
 
-entityDecode :: B.ByteString -> B.ByteString
+entityDecode :: T.Text -> T.Text
 entityDecode str = case parseOnly decodeParser str of
     Left str -> error str
     Right s -> s
