@@ -22,8 +22,8 @@ mkKevin sock = withSocketsDo $ do
     ircChan <- newChan
     return Kevin { damn = damnSock
                  , irc = client
-				 , dChan = damnChan
-				 , iChan = ircChan
+                 , dChan = damnChan
+                 , iChan = ircChan
                  , settings = set
                  , users = mempty
                  , privclasses = mempty

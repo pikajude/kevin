@@ -35,8 +35,8 @@ respond pkt "JOIN" = do
     where
         rooms = T.splitOn "," $ head $ params pkt
 respond pkt "MODE" = do
-	uname <- getsK (getUsername . settings)
-	sendChanMode uname (head $ params pkt) 
+    uname <- getsK (getUsername . settings)
+    sendChanMode uname (head $ params pkt) 
 respond pkt "PING" = sendPong (head $ params pkt)
 respond _ str = klogError $ T.unpack str
 
