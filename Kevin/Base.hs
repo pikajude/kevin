@@ -5,7 +5,7 @@ module Kevin.Base (
     KServerPacket(..),
     KClientPacket(..),
     KevinServer(..),
-    User,
+    User(..),
     Privclass,
     Chatroom,
     Title,
@@ -130,8 +130,8 @@ addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
 
-removeUser :: Chatroom -> User -> UserStore -> UserStore
-removeUser room us = M.adjust (removeOne' (\x -> fst x == fst us)) room
+removeUser :: Chatroom -> B.ByteString -> UserStore -> UserStore
+removeUser room us = M.adjust (removeOne' (\x -> Kevin.Types.username x == us)) room
 
 removeOne' :: (User -> Bool) -> [User] -> [User]
 removeOne' _ [] = []

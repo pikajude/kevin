@@ -8,19 +8,19 @@ module Kevin.Settings (
     
 import Data.ByteString.Char8
 
-data Settings = Settings { username :: ByteString
-                         , password :: ByteString
-                         , authtoken :: ByteString
+data Settings = Settings { getUsername :: ByteString
+                         , getPassword :: ByteString
+                         , getAuthtoken :: ByteString
                          } deriving (Show)
 
 emptySettings :: Settings
-emptySettings = Settings { username = ""
-                         , password = ""
-                         , authtoken = ""
+emptySettings = Settings { getUsername = ""
+                         , getPassword = ""
+                         , getAuthtoken = ""
                          }
 
 setUsername, setAuthtoken, setPassword :: ByteString -> Settings -> Settings
 
-setUsername  str set = set { username  = str }
-setAuthtoken str set = set { authtoken = str }
-setPassword  str set = set { password  = str }
+setUsername  str set = set { getUsername  = str }
+setAuthtoken str set = set { getAuthtoken = str }
+setPassword  str set = set { getPassword  = str }

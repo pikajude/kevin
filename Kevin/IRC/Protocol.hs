@@ -69,7 +69,7 @@ getAuthInfo handle authRetry = do
 
 welcome :: Handle -> KevinState ()
 welcome handle = do
-    nick <- gets username
+    nick <- gets getUsername
     mapM_ (\x -> io $ klogNow Blue ("client -> " ++ B.unpack (asStringC x)) >> B.hPut handle (asStringC x)) [
         Packet { prefix = hostname
                , command = "001"
@@ -114,8 +114,8 @@ welcome handle = do
 
 checkToken :: Handle -> KevinState ()
 checkToken handle = do
-    nick <- gets username
-    pass <- gets password
+    nick <- gets getUsername
+    pass <- gets getPassword
     io $ notice handle "Fetching token..."
     tok <- io $ getToken nick pass
     case tok of

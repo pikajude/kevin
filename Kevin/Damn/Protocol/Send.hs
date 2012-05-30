@@ -38,7 +38,7 @@ formatRoom b =
     case B.splitAt 1 b of
         ("#",s) -> return $ "chat:" `B.append` s
         ("&",s) -> do
-            uname <- getsK (username . settings)
+            uname <- getsK (getUsername . settings)
             return $ B.append "pchat:" $ B.intercalate ":" $ sort $ map (B.map toLower) [uname, s]
         r -> return $ "chat" `B.append` uncurry B.append r
 

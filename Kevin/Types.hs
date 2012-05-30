@@ -3,7 +3,7 @@ module Kevin.Types (
     KevinIO,
     Privclass,
     Chatroom,
-    User,
+    User(..),
     Title,
     PrivclassStore,
     UserStore,
@@ -55,7 +55,14 @@ io = liftIO
 
 type Chatroom = B.ByteString
 
-type User = (B.ByteString,Int)
+data User = User { username :: B.ByteString
+                 , privclass :: B.ByteString
+                 , privclassLevel :: Int
+                 , symbol :: B.ByteString
+                 , realname :: B.ByteString
+                 , typename :: B.ByteString
+                 , gpc :: B.ByteString
+                 } deriving (Eq)
 type UserStore = M.Map Chatroom [User]
 
 type Privclasses = M.Map B.ByteString Int

@@ -29,18 +29,20 @@ sendPrivMsg :: Username -> Str -> KevinIO ()
 sendKick :: Username -> Room -> Maybe Str -> KevinIO ()
 sendPromote :: Username -> Room -> Privclass -> Privclass -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
-sendUserList :: Username -> [(Username,Int)] -> Room -> KevinIO ()
+sendUserList :: Username -> [User] -> Room -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = Just $ B.concat [us, "!", us, "@chat.deviantart.com"]
            , command = "JOIN"
            , params = [rm]
            }
+
 sendPart = undefined
 sendChanMsg = undefined
 sendPrivMsg = undefined
 sendKick = undefined
 sendPromote = undefined
+
 sendTopic us rm maker top startdate = sendPacket
     Packet { prefix = hostname
            , command = "332"
@@ -50,10 +52,11 @@ sendTopic us rm maker top startdate = sendPacket
            , command = "333"
            , params = [us, rm, maker, startdate]
            }
+
 sendUserList us uss rm = sendPacket
     Packet { prefix = hostname
            , command = "353"
-           , params = [us, "=", rm, B.intercalate " " (map (\(name,level) -> B.concat [levelToSym level, name]) uss)]
+           , params = [us, "=", rm, B.intercalate " " (map (\u -> B.concat [levelToSym $ privclassLevel u, username u]) uss)]
            } >> sendPacket
     Packet { prefix = hostname
            , command = "366"
