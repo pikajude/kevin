@@ -41,6 +41,5 @@ entityEncode = T.pack . concat . entityEncodeS . T.unpack
 
 entityEncodeS :: String -> [String]
 entityEncodeS [] = []
-entityEncodeS (x:xs) | o < 127 = [x]:entityEncodeS xs
-                     | otherwise = ("&#" ++ show o ++ ";"):entityEncodeS xs
-    where o = ord x
+entityEncodeS (x:xs) | x < '\127' = [x]:entityEncodeS xs
+                     | otherwise  = ("&#" ++ show (ord x) ++ ";"):entityEncodeS xs
