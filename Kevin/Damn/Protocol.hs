@@ -69,7 +69,19 @@ respond pkt "property" = case getArg "p" pkt of
     where
         roomname = (deformatRoom . fromJust . parameter) pkt
 
-respond _ str = io $ print $ "Got the packet called " `T.append` str
+respond spk "recv" = case command pkt of
+    "msg" -> let uname = getArg "from" pkt
+                 msg   = fromJust (body pkt)
+             in I.sendChanMsg uname roomname msg
+    x -> klogError $ "Haven't yet handled " ++ T.unpack x
+    where
+        pkt = fromJust $ subPacket spk
+        roomname = (deformatRoom . fromJust . parameter) spk
+
+respond _ "ping" = getK >>= \k -> io $ writeServer k ("pong\n\0" :: T.Text)
+
+respond _ str = klog Yellow $ "Got the packet called " ++ T.unpack str
+
 
 mkUser :: Chatroom -> PrivclassStore -> Packet -> User
 mkUser room st p = User (fromJust $ parameter p)
@@ -81,7 +93,6 @@ mkUser room st p = User (fromJust $ parameter p)
                        (g "gpc")
     where
         g = flip getArg p
-
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [Handler (\(e :: KevinException) -> case e of

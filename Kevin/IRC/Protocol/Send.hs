@@ -20,6 +20,9 @@ import qualified Data.Text as T
 hostname :: Maybe T.Text
 hostname = Just "chat.deviantart.com"
 
+getHost :: T.Text -> Maybe T.Text
+getHost u = Just $ T.concat [u, "!", u, "@chat.deviantart.com"]
+
 sendPacket :: Packet -> KevinIO ()
 sendPacket p = getK >>= \k -> io $ writeClient k p
 
@@ -53,7 +56,11 @@ sendNotice str = sendPacket
            , params = ["AUTH", str `T.snoc` ' ']
            }
 
-sendChanMsg = undefined
+sendChanMsg sender room msg = sendPacket
+    Packet { prefix = getHost sender
+           , command = "PRIVMSG"
+           , params = [room, if " " `T.isInfixOf` msg then msg else T.cons ':' msg]}
+
 sendPrivMsg = undefined
 sendKick = undefined
 sendPromote = undefined
