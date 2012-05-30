@@ -7,6 +7,7 @@ module Kevin.Damn.Protocol (
 
 import Kevin.Base
 import Kevin.Util.Logger
+import Kevin.Util.Entities
 import Kevin.Damn.Packet
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
@@ -77,7 +78,7 @@ mkUser room st p = User (fromJust $ parameter p)
                        (g "pc")
                        (fromJust $ getPcLevel room (g "pc") st)
                        (g "symbol")
-                       (g "realname")
+                       (entityDecode $ g "realname")
                        (g "typename")
                        (g "gpc")
     where
