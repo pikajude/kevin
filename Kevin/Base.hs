@@ -35,6 +35,7 @@ module Kevin.Base (
     
     -- * Working with KevinState
     io,
+    runPrinter,
     getK,
     putK,
     getsK,
@@ -60,6 +61,9 @@ import Kevin.Settings as K
 import qualified Data.Map as M
 import Data.Typeable
 import Kevin.Types
+
+runPrinter :: Chan T.Text -> Handle -> IO ()
+runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
@@ -92,8 +96,8 @@ hGetSep sep h = do
     if ch == sep
         then return ""
         else do
-			rest <- hGetSep sep h
-			return $ ch:rest
+            rest <- hGetSep sep h
+            return $ ch:rest
 
 instance KevinServer Kevin where
     readClient k = do
@@ -108,11 +112,11 @@ instance KevinServer Kevin where
     writeClient k str = do
         let pkt = asStringC str
         klog_ (logger k) Blue $ "client -> " ++ padLines 10 pkt
-        T.hPutStr (irc k) pkt
+        writeChan (iChan k) pkt
     writeServer k str = do
         let pkt = asStringS str
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
-        T.hPutStr (damn k) pkt
+        writeChan (dChan k) pkt
     
     closeClient = hClose . irc
     closeServer = hClose . damn
@@ -134,7 +138,7 @@ addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
 
 removeUser :: Chatroom -> T.Text -> UserStore -> UserStore
-removeUser room us = M.adjust (removeOne' (\x -> Kevin.Types.username x == us)) room
+removeUser room us = M.adjust (removeOne' (\x -> username x == us)) room
 
 removeOne' :: (User -> Bool) -> [User] -> [User]
 removeOne' _ [] = []

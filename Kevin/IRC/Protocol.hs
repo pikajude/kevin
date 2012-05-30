@@ -12,6 +12,7 @@ import Kevin.Util.Logger
 import Kevin.Util.Token
 import Kevin.IRC.Packet
 import qualified Kevin.Damn.Protocol.Send as D
+import Kevin.IRC.Protocol.Send
 
 type KevinState = StateT Settings IO
 
@@ -33,6 +34,10 @@ respond pkt "JOIN" = do
         else modifyK (addToJoin rooms)
     where
         rooms = T.splitOn "," $ head $ params pkt
+respond pkt "MODE" = do
+	uname <- getsK (getUsername . settings)
+	sendChanMode uname (head $ params pkt) 
+respond pkt "PING" = sendPong (head $ params pkt)
 respond _ str = klogError $ T.unpack str
 
 errHandlers :: [Handler KevinIO ()]

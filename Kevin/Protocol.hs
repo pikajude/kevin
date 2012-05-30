@@ -18,8 +18,12 @@ mkKevin sock = withSocketsDo $ do
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
     logChan <- newChan
+    damnChan <- newChan
+    ircChan <- newChan
     return Kevin { damn = damnSock
                  , irc = client
+				 , dChan = damnChan
+				 , iChan = ircChan
                  , settings = set
                  , users = mempty
                  , privclasses = mempty
@@ -43,6 +47,8 @@ listen :: Kevin -> IO ()
 listen kevin = do
     mvar <- newTVarIO kevin
     runLogger (logger kevin)
+    runPrinter (dChan kevin) (damn kevin)
+    runPrinter (iChan kevin) (irc kevin)
     forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) mvar
     forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) mvar
     return ()

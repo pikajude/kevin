@@ -8,7 +8,8 @@ module Kevin.IRC.Protocol.Send (
     sendTopic,
     sendChanMode,
     sendUserList,
-    sendWhoList
+    sendWhoList,
+    sendPong
 ) where
     
 import Kevin.Base
@@ -34,6 +35,7 @@ sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
 sendChanMode :: Username -> Room -> KevinIO ()
 sendUserList :: Username -> [User] -> Room -> KevinIO ()
 sendWhoList :: Username -> [User] -> Room -> KevinIO ()
+sendPong :: T.Text -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = Just $ T.concat [us, "!", us, "@chat.deviantart.com"]
@@ -85,6 +87,12 @@ sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
     Packet { prefix = hostname
            , command = "315"
            , params = [us, rm, "End of WHO list."]
+           }
+
+sendPong p = sendPacket
+    Packet { prefix = hostname
+           , command = "PONG"
+           , params = ["chat.deviantart.com", p `T.snoc` ' ']
            }
 
 levelToSym :: Int -> T.Text
