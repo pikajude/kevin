@@ -43,7 +43,8 @@ module Kevin.Base (
 
 import Kevin.Util.Logger
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
+import qualified Data.Text.Encoding as T
 import Data.List (intercalate, nub)
 import System.IO as K (Handle, hClose, hGetChar)
 import Control.Exception as K (IOException)
@@ -95,7 +96,7 @@ hGetSep sep h = do
 
 instance KevinServer Kevin where
     readClient k = do
-        line <- T.hGetLine $ irc k
+        line <- fmap T.decodeUtf8 $ T.hGetLine $ irc k
         klog_ (logger k) Yellow $ "client <- " ++ padLines 10 line
         return $ T.init line
     readServer k = do
@@ -106,11 +107,11 @@ instance KevinServer Kevin where
     writeClient k str = do
         let pkt = asStringC str
         klog_ (logger k) Blue $ "client -> " ++ padLines 10 pkt
-        T.hPutStr (irc k) pkt
+        T.hPutStr (irc k) $ T.encodeUtf8 pkt
     writeServer k str = do
         let pkt = asStringS str
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
-        T.hPutStr (damn k) pkt
+        T.hPutStr (damn k) $ T.encodeUtf8 pkt
     
     closeClient = hClose . irc
     closeServer = hClose . damn
