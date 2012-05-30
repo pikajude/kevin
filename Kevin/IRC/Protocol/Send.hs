@@ -6,7 +6,9 @@ module Kevin.IRC.Protocol.Send (
     sendKick,
     sendPromote,
     sendTopic,
-    sendUserList
+    sendChanMode,
+    sendUserList,
+    sendWhoList
 ) where
     
 import Kevin.Base
@@ -29,7 +31,9 @@ sendPrivMsg :: Username -> Str -> KevinIO ()
 sendKick :: Username -> Room -> Maybe Str -> KevinIO ()
 sendPromote :: Username -> Room -> Privclass -> Privclass -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
+sendChanMode :: Username -> Room -> KevinIO ()
 sendUserList :: Username -> [User] -> Room -> KevinIO ()
+sendWhoList :: Username -> [User] -> Room -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = Just $ B.concat [us, "!", us, "@chat.deviantart.com"]
@@ -53,6 +57,16 @@ sendTopic us rm maker top startdate = sendPacket
            , params = [us, rm, maker, startdate]
            }
 
+sendChanMode us rm = sendPacket
+    Packet { prefix = hostname
+           , command = "324"
+           , params = [us, rm, "+t"]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "329"
+           , params = [us, rm, "767529000"]
+           }
+
 sendUserList us uss rm = sendPacket
     Packet { prefix = hostname
            , command = "353"
@@ -61,6 +75,16 @@ sendUserList us uss rm = sendPacket
     Packet { prefix = hostname
            , command = "366"
            , params = [us, rm, "End of NAMES list."]
+           }
+
+sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
+    Packet { prefix = hostname
+           , command = "352"
+           , params = [us, rm, username u, "chat.deviantart.com", "chat.deviantart.com", username u, "Hr" `B.append` symbol u, "0 " `B.append` realname u]
+           })) uss >> sendPacket
+    Packet { prefix = hostname
+           , command = "315"
+           , params = [us, rm, "End of WHO list."]
            }
 
 levelToSym :: Int -> B.ByteString

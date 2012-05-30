@@ -64,6 +64,7 @@ respond pkt "property" = case getArg "p" pkt of
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
         modifyK (onUsers (setUsers roomname members))
         I.sendUserList uname (nub members) roomname
+        I.sendWhoList uname (nub members) roomname
     x | "login:" `B.isPrefixOf` x -> klog Blue "got user info"
     q -> klogError $ "Unrecognized property " ++ B.unpack q
     where
