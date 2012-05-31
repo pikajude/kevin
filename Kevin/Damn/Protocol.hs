@@ -7,7 +7,7 @@ module Kevin.Damn.Protocol (
 
 import Kevin.Base
 import Kevin.Util.Logger
-import Kevin.Util.Entities
+import Kevin.Util.Entity
 import Kevin.Damn.Packet
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
@@ -83,10 +83,18 @@ respond spk "recv" = case command pkt of
         if countUser == 1
             then I.sendJoin (fromJust (parameter pkt)) roomname
             else I.sendNoticeClone (username us) countUser roomname
+    
+    "part" -> do
+        let uname = fromJust $ parameter pkt
+        modifyK (onUsers (removeUser uname roomname))
+        countUser <- getsK (\k -> numUsers roomname uname (users k))
+        if countUser < 1
+            then I.sendPart uname roomname
+            else I.sendNoticeUnclone uname countUser roomname
             
     "msg" -> let uname = getArg "from" pkt
                  msg   = fromJust (body pkt)
-             in I.sendChanMsg uname roomname msg
+             in I.sendChanMsg uname roomname (entityDecode msg)
              
     x -> klogError $ "Haven't yet handled " ++ T.unpack x
     

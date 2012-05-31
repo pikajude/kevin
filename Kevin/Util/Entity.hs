@@ -1,4 +1,4 @@
-module Kevin.Util.Entities (
+module Kevin.Util.Entity (
     entityEncode,
     entityDecode
 ) where

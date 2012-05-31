@@ -45,8 +45,7 @@ module Kevin.Base (
 
 import Kevin.Util.Logger
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hPutStr)
-import qualified Data.ByteString.Char8 as T (hGetLine)
+import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text.Encoding as T
 import Data.List (intercalate, nub, findIndices)
 import System.IO as K (Handle, hClose, hGetChar)
@@ -64,7 +63,7 @@ import Data.Typeable
 import Kevin.Types
 
 runPrinter :: Chan T.Text -> Handle -> IO ()
-runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h
+runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h . T.encodeUtf8
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
@@ -96,9 +95,7 @@ hGetSep sep h = do
     ch <- hGetChar h
     if ch == sep
         then return ""
-        else do
-            rest <- hGetSep sep h
-            return $ ch:rest
+        else fmap (ch:) $ hGetSep sep h
 
 instance KevinServer Kevin where
     readClient k = do
@@ -119,8 +116,8 @@ instance KevinServer Kevin where
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
         writeChan (dChan k) pkt
     
-    closeClient = hClose . irc
-    closeServer = hClose . damn
+    closeClient k = hClose (irc k) >> putStrLn "closed the socket"
+    closeServer k = hClose (damn k) >> putStrLn "closed the server"
 
 instance KServerPacket T.Text where
     asStringS = id

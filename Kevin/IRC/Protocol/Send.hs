@@ -11,7 +11,8 @@ module Kevin.IRC.Protocol.Send (
     sendUserList,
     sendWhoList,
     sendPong,
-    sendNoticeClone
+    sendNoticeClone,
+    sendNoticeUnclone
 ) where
     
 import Kevin.Base
@@ -43,6 +44,7 @@ sendUserList :: Username -> [User] -> Room -> KevinIO ()
 sendWhoList :: Username -> [User] -> Room -> KevinIO ()
 sendPong :: T.Text -> KevinIO ()
 sendNoticeClone :: Username -> Int -> Room -> KevinIO ()
+sendNoticeUnclone :: Username -> Int -> Room -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = getHost us
@@ -50,7 +52,11 @@ sendJoin us rm = sendPacket
            , params = [rm]
            }
 
-sendPart = undefined
+sendPart us rm = sendPacket
+    Packet { prefix = getHost us
+           , command = "PART"
+           , params = [rm]
+           }
 
 sendNotice str = sendPacket
     Packet { prefix = Nothing
@@ -118,6 +124,15 @@ sendNoticeClone uname i rm = sendPacket
            , command = "NOTICE"
            , params = [rm, T.concat [uname, " has joined again (now joined ", T.pack $ show i, " times)"]]
            }
+
+sendNoticeUnclone uname i rm = sendPacket
+    Packet { prefix = hostname
+           , command = "NOTICE"
+           , params = [rm, T.concat [uname, " has parted (now joined ", times, ")"]]
+           }
+    where
+        times | i == 1    = "once"
+              | otherwise = T.pack (show i) `T.append` " times"
 
 levelToSym :: Int -> T.Text
 levelToSym x | x > 0  && x <= 10 = ""

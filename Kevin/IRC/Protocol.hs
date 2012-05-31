@@ -10,6 +10,7 @@ import qualified Data.Text.IO as T
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Util.Token
+import Kevin.Util.Entity
 import Kevin.IRC.Packet
 import qualified Kevin.Damn.Protocol.Send as D
 import Kevin.IRC.Protocol.Send
@@ -34,6 +35,10 @@ respond pkt "JOIN" = do
         else modifyK (addToJoin rooms)
     where
         rooms = T.splitOn "," $ head $ params pkt
+
+respond pkt "PRIVMSG" = do
+    let msg = last $ params pkt
+    klog Green $ T.unpack $ entityEncode msg
 
 respond pkt "MODE" = do
     uname <- getsK (getUsername . settings)
