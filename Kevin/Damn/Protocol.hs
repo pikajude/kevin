@@ -37,12 +37,11 @@ respond _ "dAmnServer" = do
         token = getAuthtoken set
     sendLogin uname token
 
-respond pkt "login" = do
-    if okay pkt
-        then do
-            modifyK logIn
-            getsK toJoin >>= mapM_ sendJoin
-        else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
+respond pkt "login" = if okay pkt
+    then do
+        modifyK logIn
+        getsK toJoin >>= mapM_ sendJoin
+    else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = if okay pkt
     then do
@@ -79,7 +78,7 @@ respond spk "recv" = case command pkt of
         pcs <- getsK privclasses
         let us = mkUser roomname pcs modifiedPkt
         modifyK (onUsers (addUser roomname us))
-        countUser <- getsK (\k -> numUsers roomname (username us) (users k))
+        countUser <- getsK (numUsers roomname (username us) . users)
         if countUser == 1
             then I.sendJoin (fromJust (parameter pkt)) roomname
             else I.sendNoticeClone (username us) countUser roomname
@@ -87,7 +86,7 @@ respond spk "recv" = case command pkt of
     "part" -> do
         let uname = fromJust $ parameter pkt
         modifyK (onUsers (removeUser roomname uname))
-        countUser <- getsK (\k -> numUsers roomname uname (users k))
+        countUser <- getsK (numUsers roomname uname . users)
         if countUser < 1
             then I.sendPart uname roomname $ case getArg "r" pkt of { "" -> Nothing; x -> Just x }
             else I.sendNoticeUnclone uname countUser roomname
