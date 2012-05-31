@@ -48,7 +48,7 @@ import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text.Encoding as T
 import Data.List (intercalate, nub, findIndices)
-import System.IO as K (Handle, hClose, hGetChar)
+import System.IO as K (Handle, hClose, hIsClosed, hGetChar)
 import Control.Exception as K (IOException)
 import Network as K
 import Control.Monad.Reader
@@ -116,8 +116,8 @@ instance KevinServer Kevin where
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
         writeChan (dChan k) pkt
     
-    closeClient k = hClose (irc k) >> putStrLn "closed the socket"
-    closeServer k = hClose (damn k) >> putStrLn "closed the server"
+    closeClient = hClose . irc
+    closeServer = hClose . damn
 
 instance KServerPacket T.Text where
     asStringS = id

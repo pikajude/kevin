@@ -18,6 +18,10 @@ module Kevin.IRC.Protocol.Send (
 import Kevin.Base
 import Kevin.IRC.Packet
 import qualified Data.Text as T
+import Data.Maybe
+
+fixColon :: T.Text -> T.Text
+fixColon str = if " " `T.isInfixOf` str then str else ':' `T.cons` str
 
 hostname :: Maybe T.Text
 hostname = Just "chat.deviantart.com"
@@ -32,7 +36,8 @@ type Str = T.Text
 type Room = Str
 type Username = Str
 
-sendJoin, sendPart :: Username -> Room -> KevinIO ()
+sendJoin :: Username -> Room -> KevinIO ()
+sendPart :: Username -> Room -> Maybe Str -> KevinIO ()
 sendNotice :: Str -> KevinIO ()
 sendChanMsg :: Username -> Room -> Str -> KevinIO ()
 sendPrivMsg :: Username -> Str -> KevinIO ()
@@ -52,22 +57,22 @@ sendJoin us rm = sendPacket
            , params = [rm]
            }
 
-sendPart us rm = sendPacket
+sendPart us rm msg = sendPacket
     Packet { prefix = getHost us
            , command = "PART"
-           , params = [rm]
+           , params = rm:fmap fixColon (maybeToList msg)
            }
 
 sendNotice str = sendPacket
     Packet { prefix = Nothing
            , command = "NOTICE"
-           , params = ["AUTH", str `T.snoc` ' ']
+           , params = ["AUTH", fixColon str]
            }
 
 sendChanMsg sender room msg = sendPacket
     Packet { prefix = getHost sender
            , command = "PRIVMSG"
-           , params = [room, if " " `T.isInfixOf` msg then msg else T.cons ':' msg]}
+           , params = [room, fixColon msg]}
 
 sendPrivMsg = undefined
 sendKick = undefined
@@ -76,7 +81,7 @@ sendPromote = undefined
 sendTopic us rm maker top startdate = sendPacket
     Packet { prefix = hostname
            , command = "332"
-           , params = [us, rm, top `T.snoc` ' ']
+           , params = [us, rm, fixColon top]
            } >> sendPacket
     Packet { prefix = hostname
            , command = "333"
@@ -116,7 +121,7 @@ sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
 sendPong p = sendPacket
     Packet { prefix = hostname
            , command = "PONG"
-           , params = ["chat.deviantart.com", p `T.snoc` ' ']
+           , params = ["chat.deviantart.com", fixColon p]
            }
 
 sendNoticeClone uname i rm = sendPacket

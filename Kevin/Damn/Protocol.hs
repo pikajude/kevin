@@ -86,15 +86,17 @@ respond spk "recv" = case command pkt of
     
     "part" -> do
         let uname = fromJust $ parameter pkt
-        modifyK (onUsers (removeUser uname roomname))
+        modifyK (onUsers (removeUser roomname uname))
         countUser <- getsK (\k -> numUsers roomname uname (users k))
         if countUser < 1
-            then I.sendPart uname roomname
+            then I.sendPart uname roomname $ case getArg "r" pkt of { "" -> Nothing; x -> Just x }
             else I.sendNoticeUnclone uname countUser roomname
             
-    "msg" -> let uname = getArg "from" pkt
-                 msg   = fromJust (body pkt)
-             in I.sendChanMsg uname roomname (entityDecode msg)
+    "msg" -> do
+        let uname = getArg "from" pkt
+            msg   = fromJust (body pkt)
+        un <- getsK (getUsername . settings)
+        unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode msg)
              
     x -> klogError $ "Haven't yet handled " ++ T.unpack x
     

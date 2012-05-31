@@ -49,6 +49,6 @@ listen kevin = do
     runLogger (logger kevin)
     runPrinter (dChan kevin) (damn kevin)
     runPrinter (iChan kevin) (irc kevin)
-    forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) S.listen) mvar
-    forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin) >> io (closeClient kevin)) C.listen) mvar
+    forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeClient kevin)) S.listen) mvar
+    forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin)) C.listen) mvar
     return ()

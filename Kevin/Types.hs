@@ -64,7 +64,8 @@ data User = User { username :: T.Text
                  , realname :: T.Text
                  , typename :: T.Text
                  , gpc :: T.Text
-                 } deriving (Eq)
+                 } deriving (Eq, Show)
+
 type UserStore = M.Map Chatroom [User]
 
 type Privclasses = M.Map T.Text Int
