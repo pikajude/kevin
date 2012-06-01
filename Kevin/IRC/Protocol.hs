@@ -37,8 +37,8 @@ respond pkt "JOIN" = do
         rooms = T.splitOn "," $ head $ params pkt
 
 respond pkt "PRIVMSG" = do
-    let msg = last $ params pkt
-    klog Green $ T.unpack $ entityEncode msg
+    let (room:msg:_) = params pkt
+    D.sendMsg room $ entityEncode msg
 
 respond pkt "MODE" = do
     uname <- getsK (getUsername . settings)

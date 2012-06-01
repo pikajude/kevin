@@ -7,7 +7,6 @@ module Kevin.Damn.Protocol.Send (
     sendLogin,
     sendJoin,
     sendPart,
-    sendPong,
     sendMsg,
     sendAction,
     sendNpMsg,
@@ -57,7 +56,6 @@ sendHandshake :: KevinIO ()
 sendLogin :: Username -> Str -> KevinIO ()
 sendJoin :: Room -> KevinIO ()
 sendPart :: Room -> Maybe Str -> KevinIO ()
-sendPong :: KevinIO ()
 sendMsg, sendAction, sendNpMsg :: Room -> Str -> KevinIO ()
 sendPromote, sendDemote :: Room -> Username -> Pc -> KevinIO ()
 sendBan, sendUnban :: Room -> Username -> KevinIO ()
@@ -92,8 +90,15 @@ sendJoin room = do
                       }
 
 sendPart = undefined
-sendPong = undefined
-sendMsg = undefined
+
+sendMsg room msg = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "send"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Just $ T.concat ["msg main\n\n", msg]
+                      }
+
 sendAction = undefined
 sendNpMsg = undefined
 sendPromote = undefined
