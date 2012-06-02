@@ -20,7 +20,8 @@ module Kevin.Base (
     onUsers,
     numUsers,
     
-    setPrivclass,
+    addPrivclass,
+    setPrivclasses,
     onPrivclasses,
     getPcLevel,
     
@@ -153,8 +154,11 @@ setUsers = M.insert
 onUsers :: (UserStore -> UserStore) -> Kevin -> Kevin
 onUsers f k = k { users = f (users k) }
 
-setPrivclass :: Chatroom -> Privclass -> PrivclassStore -> PrivclassStore
-setPrivclass room (p,i) = M.insertWith M.union room (M.singleton p i)
+addPrivclass :: Chatroom -> Privclass -> PrivclassStore -> PrivclassStore
+addPrivclass room (p,i) = M.insertWith M.union room (M.singleton p i)
+
+setPrivclasses :: Chatroom -> [Privclass] -> PrivclassStore -> PrivclassStore
+setPrivclasses room ps = M.insert room (M.fromList ps)
 
 onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
 onPrivclasses f k = k { privclasses = f (privclasses k) }

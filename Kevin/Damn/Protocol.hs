@@ -8,6 +8,7 @@ module Kevin.Damn.Protocol (
 import Kevin.Base
 import Kevin.Util.Logger
 import Kevin.Util.Entity
+import Kevin.Util.Tablump
 import Kevin.Damn.Packet
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
@@ -52,11 +53,11 @@ respond pkt "join" = if okay pkt
 respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses $ fromJust $ body pkt
-        modifyK (onPrivclasses (foldr ((.) . setPrivclass roomname) id pcs))
+        modifyK (onPrivclasses (setPrivclasses roomname pcs))
         
     "topic" -> do
         uname <- getsK (getUsername . settings)
-        I.sendTopic uname roomname (getArg "by" pkt) (fromJust (body pkt)) (getArg "ts" pkt)
+        I.sendTopic uname roomname (getArg "by" pkt) (tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
         
     "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
     
@@ -95,7 +96,7 @@ respond spk "recv" = case command pkt of
         let uname = getArg "from" pkt
             msg   = fromJust (body pkt)
         un <- getsK (getUsername . settings)
-        unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode msg)
+        unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
              
     x -> klogError $ "Haven't yet handled " ++ T.unpack x
     
