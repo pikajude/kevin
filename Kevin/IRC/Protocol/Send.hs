@@ -1,6 +1,7 @@
 module Kevin.IRC.Protocol.Send (
     sendJoin,
     sendPart,
+    sendSetUserMode,
     sendNotice,
     sendChanMsg,
     sendPrivMsg,
@@ -38,6 +39,7 @@ type Username = Str
 
 sendJoin :: Username -> Room -> KevinIO ()
 sendPart :: Username -> Room -> Maybe Str -> KevinIO ()
+sendSetUserMode :: Username -> Room -> Int -> KevinIO ()
 sendNotice :: Str -> KevinIO ()
 sendChanMsg :: Username -> Room -> Str -> KevinIO ()
 sendPrivMsg :: Username -> Str -> KevinIO ()
@@ -63,16 +65,25 @@ sendPart us rm msg = sendPacket
            , params = rm:fmap fixColon (maybeToList msg)
            }
 
+sendSetUserMode us rm m = unless (T.null mode) $ sendPacket
+    Packet { prefix = hostname
+           , command = "MODE"
+           , params = [rm, '+' `T.cons` mode, us]
+           }
+    where
+        mode = levelToMode m
+
 sendNotice str = sendPacket
     Packet { prefix = Nothing
            , command = "NOTICE"
            , params = ["AUTH", fixColon str]
            }
 
-sendChanMsg sender room msg = sendPacket
+sendChanMsg sender room msg = mapM_ (\x -> sendPacket
     Packet { prefix = getHost sender
            , command = "PRIVMSG"
-           , params = [room, fixColon msg]}
+           , params = [room, fixColon x]
+           }) $ T.splitOn "\n" msg
 
 sendPrivMsg = undefined
 sendKick = undefined
@@ -140,8 +151,8 @@ sendNoticeUnclone uname i rm = sendPacket
               | otherwise = T.pack (show i) `T.append` " times"
 
 levelToSym :: Int -> T.Text
-levelToSym x | x > 0  && x <= 10 = ""
-             | x > 10 && x <= 70 = "+"
+levelToSym x | x > 0  && x <= 35 = ""
+             | x > 35 && x <= 70 = "+"
              | x > 70 && x <  99 = "@"
              | x == 99           = "~"
              | otherwise         = ""

@@ -11,7 +11,7 @@ import Kevin.Util.Entity
 import Kevin.Util.Tablump
 import Kevin.Damn.Packet
 import qualified Data.Text as T
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.List (nub)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
@@ -57,16 +57,18 @@ respond pkt "property" = case getArg "p" pkt of
         
     "topic" -> do
         uname <- getsK (getUsername . settings)
-        I.sendTopic uname roomname (getArg "by" pkt) (tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
+        I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " $ tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
         
     "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
     
     "members" -> do
         (pcs,uname) <- getsK (privclasses &&& getUsername . settings)
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
+            pc = privclass $ head $ filter (\x -> username x == uname) members
         modifyK (onUsers (setUsers roomname members))
         I.sendUserList uname (nub members) roomname
         I.sendWhoList uname (nub members) roomname
+        I.sendSetUserMode uname roomname $ fromMaybe 0 $ getPcLevel roomname pc pcs
         
     x | "login:" `T.isPrefixOf` x -> klog Blue "got user info"
     
@@ -76,13 +78,15 @@ respond pkt "property" = case getArg "p" pkt of
 
 respond spk "recv" = case command pkt of
     "join" -> do
-        pcs <- getsK privclasses
+        let usname = fromJust $ parameter pkt
+        (pcs,countUser) <- getsK (privclasses &&& numUsers roomname usname . users)
         let us = mkUser roomname pcs modifiedPkt
         modifyK (onUsers (addUser roomname us))
-        countUser <- getsK (numUsers roomname (username us) . users)
-        if countUser == 1
-            then I.sendJoin (fromJust (parameter pkt)) roomname
-            else I.sendNoticeClone (username us) countUser roomname
+        if countUser == 0
+            then do
+                I.sendJoin usname roomname
+                I.sendSetUserMode usname roomname $ fromMaybe 0 $ getPcLevel roomname (getArg "pc" modifiedPkt) pcs
+            else I.sendNoticeClone (username us) (succ countUser) roomname
     
     "part" -> do
         let uname = fromJust $ parameter pkt
