@@ -14,8 +14,12 @@ import Kevin.Util.Entity
 import Kevin.IRC.Packet
 import qualified Kevin.Damn.Protocol.Send as D
 import Kevin.IRC.Protocol.Send
+import Control.Arrow
 
 type KevinState = StateT Settings IO
+
+if' :: Bool -> a -> a -> a
+if' x y z = if x then y else z
 
 cleanup :: KevinIO ()
 cleanup = klog Green "cleanup client"
@@ -41,8 +45,16 @@ respond pkt "PRIVMSG" = do
     D.sendMsg room $ entityEncode msg
 
 respond pkt "MODE" = do
-    uname <- getsK (getUsername . settings)
-    sendChanMode uname (head $ params pkt)
+    if length (params pkt) > 1
+        then do
+            let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
+            case mode of
+                "b" -> (if' toggle D.sendBan D.sendUnban) (head $ params pkt) (last $ params pkt)
+                -- TODO: deformat ban mask
+                "o" -> (if' toggle D.sendPromote D.sendDemote) (head $ params pkt) (last $ params pkt) Nothing
+        else do
+            uname <- getsK (getUsername . settings)
+            sendChanMode uname (head $ params pkt)
 
 respond pkt "PING" = sendPong (head $ params pkt)
 
@@ -51,11 +63,7 @@ respond _ str = klogError $ T.unpack str
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [
-    Handler (\(e :: KevinException) -> case e of
-        LostServer -> klogError "Lost server connection, DCing client"
-        ParseFailure -> klogError "Bad communication from client"
-        _ -> klogError "Got the wrong exception"),
-        
+    Handler (\(_ :: KevinException) -> klogError "Bad communication from client"),
     Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function

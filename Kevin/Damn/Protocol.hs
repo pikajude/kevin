@@ -126,8 +126,5 @@ mkUser room st p = User (fromJust $ parameter p)
         g = flip getArg p
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [Handler (\(e :: KevinException) -> case e of
-                   LostClient -> klogError "Lost client connection, DCing server"
-                   ParseFailure -> klogError "Malformed communication from server"
-                   _ -> klogError "Got the wrong exception"),
+errHandlers = [Handler (\(_ :: KevinException) -> klogError "Malformed communication from server"),
                Handler (\(e :: IOException) -> klogError $ "server: " ++ show e)]

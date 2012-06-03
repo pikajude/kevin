@@ -57,7 +57,7 @@ sendLogin :: Username -> Str -> KevinIO ()
 sendJoin :: Room -> KevinIO ()
 sendPart :: Room -> Maybe Str -> KevinIO ()
 sendMsg, sendAction, sendNpMsg :: Room -> Str -> KevinIO ()
-sendPromote, sendDemote :: Room -> Username -> Pc -> KevinIO ()
+sendPromote, sendDemote :: Room -> Username -> Maybe Pc -> KevinIO ()
 sendBan, sendUnban :: Room -> Username -> KevinIO ()
 sendKick :: Room -> Username -> Str -> KevinIO ()
 sendGetProperty :: Room -> Str -> KevinIO ()
@@ -101,10 +101,39 @@ sendMsg room msg = do
 
 sendAction = undefined
 sendNpMsg = undefined
-sendPromote = undefined
-sendDemote = undefined
-sendBan = undefined
-sendUnban = undefined
+
+sendPromote room us pc = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "send"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Just $ T.concat ["promote ", us, maybe "" (T.append "\n\n") pc]
+                      }
+
+sendDemote room us pc = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "send"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Just $ T.concat ["demote ", us, maybe "" (T.append "\n\n") pc]
+                      }
+
+sendBan room us = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "send"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Just $ T.concat ["ban ", us, "\n"]
+                      }
+
+sendUnban room us = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "send"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Just $ T.concat ["unban ", us, "\n"]
+                      }
+
 sendKick = undefined
 sendGetProperty = undefined
 sendWhois = undefined

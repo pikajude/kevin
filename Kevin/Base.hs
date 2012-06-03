@@ -81,7 +81,7 @@ class KevinServer a where
     writeClient :: (KClientPacket p) => a -> p -> IO ()
     closeClient, closeServer :: a -> IO ()
 
-data KevinException = LostClient | LostServer | ParseFailure
+data KevinException = ParseFailure
     deriving (Show, Typeable)
 
 instance Exception KevinException
