@@ -18,14 +18,14 @@ decodeCharacter = entityNumeric <|> entityNamed <|> take 1
 entityNumeric :: Parser T.Text
 entityNumeric = do
     string "&#"
-    entity <- T.append <$> option "" (string "x") <*> takeWhile1 (inClass "a-fA-F0-9")
+    entity <- T.append <$> option "" (string "x") <*> takeWhile1 isHexDigit
     char ';'
     return $ maybe "?" T.singleton $ (if "x" `T.isPrefixOf` entity then lookupHexEntity else lookupNumericEntity) entity
 
 entityNamed :: Parser T.Text
 entityNamed = do
     char '&'
-    entity <- takeWhile1 isAlpha
+    entity <- T.cons <$> letter <*> takeWhile1 (\x -> isAlpha x || isDigit x)
     char ';'
     return $ maybe "?" T.singleton $ lookupNamedEntity entity
 
