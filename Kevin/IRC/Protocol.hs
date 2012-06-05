@@ -51,7 +51,6 @@ respond pkt "MODE" = do
             let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
             case mode of
                 "b" -> (if' toggle D.sendBan D.sendUnban) (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
-                -- TODO: deformat ban mask
                 "o" -> (if' toggle D.sendPromote D.sendDemote) (head $ params pkt) (last $ params pkt) Nothing
         else do
             uname <- getsK (getUsername . settings)
