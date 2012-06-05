@@ -16,6 +16,7 @@ module Kevin.Base (
     -- * Modifiers
     addUser,
     removeUser,
+    removeUserAll,
     setUsers,
     onUsers,
     numUsers,
@@ -24,6 +25,8 @@ module Kevin.Base (
     setPrivclasses,
     onPrivclasses,
     getPcLevel,
+    getPc,
+    setUserPrivclass,
     
     logIn,
     
@@ -49,6 +52,7 @@ import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text.Encoding as T
 import Data.List (intercalate, nub, findIndices)
+import Data.Maybe
 import System.IO as K (Handle, hClose, hIsClosed, hGetChar)
 import Control.Exception as K (IOException)
 import Network as K
@@ -144,6 +148,9 @@ numUsers room us st = case M.lookup room st of
 removeUser :: Chatroom -> T.Text -> UserStore -> UserStore
 removeUser room us = M.adjust (removeOne' (\x -> username x == us)) room
 
+removeUserAll :: Chatroom -> T.Text -> UserStore -> UserStore
+removeUserAll room us = M.adjust (filter (\x -> username x /= us)) room
+
 removeOne' :: (User -> Bool) -> [User] -> [User]
 removeOne' _ [] = []
 removeOne' f (x:xs) = if f x then xs else x:removeOne' f xs
@@ -163,8 +170,18 @@ setPrivclasses room ps = M.insert room (M.fromList ps)
 onPrivclasses :: (PrivclassStore -> PrivclassStore) -> Kevin -> Kevin
 onPrivclasses f k = k { privclasses = f (privclasses k) }
 
-getPcLevel :: Chatroom -> T.Text -> PrivclassStore -> Maybe Int
-getPcLevel room pcname store = M.lookup room store >>= M.lookup pcname
+getPc :: Chatroom -> T.Text -> UserStore -> Maybe T.Text
+getPc room user st = case M.lookup room st of
+    Just qs -> fmap privclass $ listToMaybe $ filter (\u -> username u == user) qs
+    Nothing -> Nothing
+
+getPcLevel :: Chatroom -> T.Text -> PrivclassStore -> Int
+getPcLevel room pcname store = fromMaybe 0 $ M.lookup room store >>= M.lookup pcname
+
+setUserPrivclass :: Chatroom -> T.Text -> T.Text -> Kevin -> Kevin
+setUserPrivclass room user pc k = onUsers (M.adjust (map (\u -> if username u == user then u {privclass = pc, privclassLevel = pclevel} else u)) room) k
+    where
+        pclevel = getPcLevel room pc $ privclasses k
 
 setTitle :: Chatroom -> Title -> TitleStore -> TitleStore
 setTitle = M.insert

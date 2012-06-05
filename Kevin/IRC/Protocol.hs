@@ -43,7 +43,11 @@ respond pkt "JOIN" = do
 
 respond pkt "PRIVMSG" = do
     let (room:msg:_) = params pkt
-    D.sendMsg room $ entityEncode msg
+    if "\1ACTION" `T.isPrefixOf` msg
+        then do
+            let newMsg = T.drop 8 $ T.init msg
+            D.sendAction room $ entityEncode newMsg
+        else D.sendMsg room $ entityEncode msg
 
 respond pkt "MODE" = do
     if length (params pkt) > 1

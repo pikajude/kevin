@@ -99,7 +99,14 @@ sendMsg room msg = do
                       , body = Just $ T.concat ["msg main\n\n", msg]
                       }
 
-sendAction = undefined
+sendAction room msg = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "send"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Just $ T.concat ["action main\n\n", msg]
+                      }
+
 sendNpMsg = undefined
 
 sendPromote room us pc = do

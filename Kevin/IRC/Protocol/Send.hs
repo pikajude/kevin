@@ -2,8 +2,10 @@ module Kevin.IRC.Protocol.Send (
     sendJoin,
     sendPart,
     sendSetUserMode,
+    sendChangeUserMode,
     sendNotice,
     sendChanMsg,
+    sendChanAction,
     sendPrivMsg,
     sendKick,
     sendPromote,
@@ -33,6 +35,9 @@ getHost u = Just $ T.concat [u, "!", u, "@chat.deviantart.com"]
 sendPacket :: Packet -> KevinIO ()
 sendPacket p = getK >>= \k -> io $ writeClient k p
 
+asAction :: T.Text -> T.Text
+asAction x = T.concat ["\1ACTION ", x, "\1"]
+
 type Str = T.Text
 type Room = Str
 type Username = Str
@@ -40,10 +45,11 @@ type Username = Str
 sendJoin :: Username -> Room -> KevinIO ()
 sendPart :: Username -> Room -> Maybe Str -> KevinIO ()
 sendSetUserMode :: Username -> Room -> Int -> KevinIO ()
+sendChangeUserMode :: Username -> Room -> Int -> Int -> KevinIO ()
 sendNotice :: Str -> KevinIO ()
-sendChanMsg :: Username -> Room -> Str -> KevinIO ()
+sendChanMsg, sendChanAction :: Username -> Room -> Str -> KevinIO ()
 sendPrivMsg :: Username -> Str -> KevinIO ()
-sendKick :: Username -> Room -> Maybe Str -> KevinIO ()
+sendKick :: Username -> Username -> Room -> Maybe Str -> KevinIO ()
 sendPromote :: Username -> Room -> Privclass -> Privclass -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
 sendChanMode :: Username -> Room -> KevinIO ()
@@ -73,6 +79,15 @@ sendSetUserMode us rm m = unless (T.null mode) $ sendPacket
     where
         mode = levelToMode m
 
+sendChangeUserMode us rm old new = unless (oldMode == newMode) $ sendPacket
+    Packet { prefix = hostname
+           , command = "MODE"
+           , params = [rm, T.concat ["-", oldMode, "+", newMode], us]
+           }
+    where
+        oldMode = levelToMode old
+        newMode = levelToMode new
+
 sendNotice str = sendPacket
     Packet { prefix = Nothing
            , command = "NOTICE"
@@ -85,9 +100,19 @@ sendChanMsg sender room msg = mapM_ (\x -> sendPacket
            , params = [room, fixColon x]
            }) $ T.splitOn "\n" msg
 
+sendChanAction sender room msg = mapM_ (\x -> sendPacket
+    Packet { prefix = getHost sender
+           , command = "PRIVMSG"
+           , params = [room, asAction x]
+           }) $ T.splitOn "\n" msg
+
 sendPrivMsg = undefined
-sendKick = undefined
-sendPromote = undefined
+
+sendKick kickee kicker room msg = sendPacket
+    Packet { prefix = getHost kicker
+           , command = "KICK"
+           , params = [room, kickee] ++ maybeToList (fmap fixColon msg)
+           }
 
 sendTopic us rm maker top startdate = sendPacket
     Packet { prefix = hostname

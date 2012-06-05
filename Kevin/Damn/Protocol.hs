@@ -11,7 +11,7 @@ import Kevin.Util.Entity
 import Kevin.Util.Tablump
 import Kevin.Damn.Packet
 import qualified Data.Text as T
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust)
 import Data.List (nub)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
@@ -68,7 +68,7 @@ respond pkt "property" = case getArg "p" pkt of
         modifyK (onUsers (setUsers roomname members))
         I.sendUserList uname (nub members) roomname
         I.sendWhoList uname (nub members) roomname
-        I.sendSetUserMode uname roomname $ fromMaybe 0 $ getPcLevel roomname pc pcs
+        I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
         
     x | "login:" `T.isPrefixOf` x -> klog Blue "got user info"
     
@@ -85,7 +85,7 @@ respond spk "recv" = case command pkt of
         if countUser == 0
             then do
                 I.sendJoin usname roomname
-                I.sendSetUserMode usname roomname $ fromMaybe 0 $ getPcLevel roomname (getArg "pc" modifiedPkt) pcs
+                I.sendSetUserMode usname roomname $ getPcLevel roomname (getArg "pc" modifiedPkt) pcs
             else I.sendNoticeClone (username us) (succ countUser) roomname
     
     "part" -> do
@@ -101,7 +101,30 @@ respond spk "recv" = case command pkt of
             msg   = fromJust (body pkt)
         un <- getsK (getUsername . settings)
         unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
-             
+    
+    "action" -> do
+        let uname = getArg "from" pkt
+            msg   = fromJust (body pkt)
+        un <- getsK (getUsername . settings)
+        unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
+    
+    "privchg" -> do
+        (pcs,us) <- getsK (privclasses &&& users)
+        let user = fromJust $ parameter pkt
+            by = getArg "by" pkt
+            oldPc = fromJust $ getPc roomname user us
+            newPc = getArg "pc" pkt
+            oldPcLevel = getPcLevel roomname oldPc pcs
+            newPcLevel = getPcLevel roomname newPc pcs
+        modifyK (setUserPrivclass roomname user newPc)
+        I.sendNotice $ T.concat [user, " has been moved from ", oldPc, " to ", newPc, " by ", by]
+        I.sendChangeUserMode user roomname oldPcLevel newPcLevel
+    
+    "kicked" -> do
+        let uname = fromJust $ parameter pkt
+        modifyK (onUsers (removeUserAll roomname uname))
+        I.sendKick uname (getArg "by" pkt) roomname $ case body pkt of {Just "" -> Nothing; x -> x}
+            
     x -> klogError $ "Haven't yet handled " ++ T.unpack x
     
     where
@@ -117,7 +140,7 @@ respond _ str = klog Yellow $ "Got the packet called " ++ T.unpack str
 mkUser :: Chatroom -> PrivclassStore -> Packet -> User
 mkUser room st p = User (fromJust $ parameter p)
                        (g "pc")
-                       (fromJust $ getPcLevel room (g "pc") st)
+                       (getPcLevel room (g "pc") st)
                        (g "symbol")
                        (entityDecode $ g "realname")
                        (g "typename")
