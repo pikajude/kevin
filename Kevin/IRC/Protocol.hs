@@ -63,7 +63,7 @@ respond _ str = klogError $ T.unpack str
 
 
 unmask :: T.Text -> Maybe T.Text
-unmask y = case T.split (\x -> x == '@' || x == '!') y of
+unmask y = case T.split (`elem` "@!") y of
     [s] -> Just s
     xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
 
