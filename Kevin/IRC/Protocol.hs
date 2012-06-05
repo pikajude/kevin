@@ -15,6 +15,7 @@ import Kevin.IRC.Packet
 import qualified Kevin.Damn.Protocol.Send as D
 import Kevin.IRC.Protocol.Send
 import Control.Arrow
+import Data.Maybe
 
 type KevinState = StateT Settings IO
 
@@ -49,7 +50,7 @@ respond pkt "MODE" = do
         then do
             let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
             case mode of
-                "b" -> (if' toggle D.sendBan D.sendUnban) (head $ params pkt) (last $ params pkt)
+                "b" -> (if' toggle D.sendBan D.sendUnban) (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
                 -- TODO: deformat ban mask
                 "o" -> (if' toggle D.sendPromote D.sendDemote) (head $ params pkt) (last $ params pkt) Nothing
         else do
@@ -60,6 +61,11 @@ respond pkt "PING" = sendPong (head $ params pkt)
 
 respond _ str = klogError $ T.unpack str
 
+
+unmask :: T.Text -> Maybe T.Text
+unmask y = case T.split (\x -> x == '@' || x == '!') y of
+    [s] -> Just s
+    xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [

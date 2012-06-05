@@ -10,6 +10,7 @@ import Data.Char
 import qualified Data.Text.Read as R
 import Control.Monad (guard)
 import Control.Applicative ((<|>), (<$>), (<*>))
+import Data.Maybe
 
 decodeCharacter :: Parser T.Text
 decodeCharacter = entityNumeric <|> entityNamed <|> take 1
@@ -19,14 +20,14 @@ entityNumeric = do
     string "&#"
     entity <- T.append <$> option "" (string "x") <*> takeWhile1 isHexDigit
     char ';'
-    return $ maybe "?" T.singleton $ (if "x" `T.isPrefixOf` entity then lookupHexEntity else lookupNumericEntity) entity
+    return $ fromMaybe (T.concat ["&#", entity, ";"]) $ (if "x" `T.isPrefixOf` entity then lookupHexEntity else lookupNumericEntity) entity
 
 entityNamed :: Parser T.Text
 entityNamed = do
     char '&'
     entity <- T.cons <$> letter <*> takeWhile1 (\x -> isAlpha x || isDigit x)
     char ';'
-    return $ maybe "?" T.singleton $ lookupNamedEntity entity
+    return $ fromMaybe (T.concat ["&", entity, ";"]) $ lookupNamedEntity entity
 
 decodeParser :: Parser T.Text
 decodeParser = T.concat <$> many1 decodeCharacter
@@ -45,21 +46,21 @@ entityEncodeS [] = []
 entityEncodeS (x:xs) | x < '\127' = [x]:entityEncodeS xs
                      | otherwise  = ("&#" ++ show (ord x) ++ ";"):entityEncodeS xs
 
-lookupNamedEntity :: T.Text -> Maybe Char
-lookupNamedEntity ent = fmap chr $ lookup ent namedEntities
+lookupNamedEntity :: T.Text -> Maybe T.Text
+lookupNamedEntity ent = fmap (T.singleton . chr) $ lookup ent namedEntities
 
-lookupHexEntity :: T.Text -> Maybe Char
+lookupHexEntity :: T.Text -> Maybe T.Text
 lookupHexEntity e = case R.hexadecimal $ T.cons '0' e of
     Right (n,_) -> do
         guard $ n < ord maxBound
-        return $ chr n
+        return $ T.singleton $ chr n
     Left _ -> Nothing
 
-lookupNumericEntity :: T.Text -> Maybe Char
+lookupNumericEntity :: T.Text -> Maybe T.Text
 lookupNumericEntity e = case R.decimal e of
     Right (n,_) -> do
         guard $ n < ord maxBound
-        return $ chr n
+        return $ T.singleton $ chr n
     Left _ -> Nothing
 
 namedEntities :: [(T.Text, Int)]
