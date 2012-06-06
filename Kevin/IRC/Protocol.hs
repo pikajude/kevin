@@ -41,6 +41,8 @@ respond pkt "JOIN" = do
     where
         rooms = T.splitOn "," $ head $ params pkt
 
+respond pkt "PART" = mapM_ D.sendPart $ T.splitOn "," $ head $ params pkt
+
 respond pkt "PRIVMSG" = do
     let (room:msg:_) = params pkt
     if "\1ACTION" `T.isPrefixOf` msg
@@ -56,6 +58,7 @@ respond pkt "MODE" = do
             case mode of
                 "b" -> (if' toggle D.sendBan D.sendUnban) (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
                 "o" -> (if' toggle D.sendPromote D.sendDemote) (head $ params pkt) (last $ params pkt) Nothing
+                _ -> sendNotice $ "Unsupported mode " `T.append` mode
         else do
             uname <- getsK (getUsername . settings)
             sendChanMode uname (head $ params pkt)

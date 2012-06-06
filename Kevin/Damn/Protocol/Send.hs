@@ -54,8 +54,7 @@ type Pc = Str
 -- * Communication to the server
 sendHandshake :: KevinIO ()
 sendLogin :: Username -> Str -> KevinIO ()
-sendJoin :: Room -> KevinIO ()
-sendPart :: Room -> Maybe Str -> KevinIO ()
+sendJoin, sendPart :: Room -> KevinIO ()
 sendMsg, sendAction, sendNpMsg :: Room -> Str -> KevinIO ()
 sendPromote, sendDemote :: Room -> Username -> Maybe Pc -> KevinIO ()
 sendBan, sendUnban :: Room -> Username -> KevinIO ()
@@ -89,7 +88,13 @@ sendJoin room = do
                       , body = Nothing
                       }
 
-sendPart = undefined
+sendPart room = do
+    roomname <- formatRoom room
+    sendPacket Packet { command = "part"
+                      , parameter = Just roomname
+                      , args = []
+                      , body = Nothing
+                      }
 
 sendMsg room msg = do
     roomname <- formatRoom room

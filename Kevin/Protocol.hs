@@ -29,6 +29,7 @@ mkKevin sock = withSocketsDo $ do
                  , privclasses = mempty
                  , titles = mempty
                  , toJoin = mempty
+                 , joining = mempty
                  , loggedIn = False
                  , logger = logChan
                  }

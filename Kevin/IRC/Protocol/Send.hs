@@ -8,7 +8,6 @@ module Kevin.IRC.Protocol.Send (
     sendChanAction,
     sendPrivMsg,
     sendKick,
-    sendPromote,
     sendTopic,
     sendChanMode,
     sendUserList,
@@ -50,7 +49,6 @@ sendNotice :: Str -> KevinIO ()
 sendChanMsg, sendChanAction :: Username -> Room -> Str -> KevinIO ()
 sendPrivMsg :: Username -> Str -> KevinIO ()
 sendKick :: Username -> Username -> Room -> Maybe Str -> KevinIO ()
-sendPromote :: Username -> Room -> Privclass -> Privclass -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
 sendChanMode :: Username -> Room -> KevinIO ()
 sendUserList :: Username -> [User] -> Room -> KevinIO ()

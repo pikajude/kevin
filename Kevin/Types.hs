@@ -32,6 +32,7 @@ data Kevin = Kevin { damn :: Handle
                    , privclasses :: PrivclassStore
                    , titles :: TitleStore
                    , toJoin :: [T.Text]
+                   , joining :: [T.Text]
                    , loggedIn :: Bool
                    , logger :: Chan String
                    }

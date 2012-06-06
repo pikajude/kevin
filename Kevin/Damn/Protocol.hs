@@ -12,7 +12,7 @@ import Kevin.Util.Tablump
 import Kevin.Damn.Packet
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
-import Data.List (nub)
+import Data.List (nub, delete)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
 import Control.Arrow ((&&&))
@@ -46,9 +46,22 @@ respond pkt "login" = if okay pkt
 
 respond pkt "join" = if okay pkt
     then do
+        modifyK (onJoining (r:))
         uname <- getsK (getUsername . settings)
-        (I.sendJoin uname . deformatRoom . fromJust) $ parameter pkt
-    else I.sendNotice $ "Join failed: " `T.append` getArg "e" pkt
+        I.sendJoin uname roomname
+    else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
+    where
+        r = fromJust $ parameter pkt
+        roomname = deformatRoom r
+
+respond pkt "part" = if okay pkt
+    then do
+        uname <- getsK (getUsername . settings)
+        modifyK (removeRoom roomname)
+        I.sendPart uname roomname Nothing
+    else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", getArg "e" pkt]
+    where
+        roomname = deformatRoom $ fromJust $ parameter pkt
 
 respond pkt "property" = case getArg "p" pkt of
     "privclasses" -> do
@@ -62,13 +75,15 @@ respond pkt "property" = case getArg "p" pkt of
     "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
     
     "members" -> do
-        (pcs,uname) <- getsK (privclasses &&& getUsername . settings)
+        (pcs,(uname,j)) <- getsK (privclasses &&& getUsername . settings &&& joining)
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
             pc = privclass $ head $ filter (\x -> username x == uname) members
         modifyK (onUsers (setUsers roomname members))
-        I.sendUserList uname (nub members) roomname
-        I.sendWhoList uname (nub members) roomname
-        I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
+        when (elem (fromJust $ parameter pkt) j) $ do
+            I.sendUserList uname (nub members) roomname
+            I.sendWhoList uname (nub members) roomname
+            I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
+            modifyK (onJoining (delete $ fromJust $ parameter pkt))
         
     x | "login:" `T.isPrefixOf` x -> klog Blue "got user info"
     
@@ -97,13 +112,13 @@ respond spk "recv" = case command pkt of
             else I.sendNoticeUnclone uname countUser roomname
             
     "msg" -> do
-        let uname = getArg "from" pkt
+        let uname = arg "from"
             msg   = fromJust (body pkt)
         un <- getsK (getUsername . settings)
         unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
     
     "action" -> do
-        let uname = getArg "from" pkt
+        let uname = arg "from"
             msg   = fromJust (body pkt)
         un <- getsK (getUsername . settings)
         unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
@@ -111,9 +126,9 @@ respond spk "recv" = case command pkt of
     "privchg" -> do
         (pcs,us) <- getsK (privclasses &&& users)
         let user = fromJust $ parameter pkt
-            by = getArg "by" pkt
+            by = arg "by"
             oldPc = fromJust $ getPc roomname user us
-            newPc = getArg "pc" pkt
+            newPc = arg "pc"
             oldPcLevel = getPcLevel roomname oldPc pcs
             newPcLevel = getPcLevel roomname newPc pcs
         modifyK (setUserPrivclass roomname user newPc)
@@ -123,14 +138,24 @@ respond spk "recv" = case command pkt of
     "kicked" -> do
         let uname = fromJust $ parameter pkt
         modifyK (onUsers (removeUserAll roomname uname))
-        I.sendKick uname (getArg "by" pkt) roomname $ case body pkt of {Just "" -> Nothing; x -> x}
+        I.sendKick uname (arg "by") roomname $ case body pkt of {Just "" -> Nothing; x -> x}
             
-    x -> klogError $ "Haven't yet handled " ++ T.unpack x
+    "admin" -> case fromJust $ parameter pkt of
+        "create" -> I.sendNotice $ T.concat ["Privclass ", arg "name", " created by ", arg "by", " with: ", arg "privs"]
+        "update" -> I.sendNotice $ T.concat ["Privclass ", arg "name", " updated by ", arg "by", " with: ", arg "privs"]
+        "rename" -> I.sendNotice $ T.concat ["Privclass ", arg "prev", " renamed to ", arg "name", " by ", arg "by"]
+        "move"   -> I.sendNotice $ T.concat [arg "n", " users in privclass ", arg "prev", " moved to ", arg "name", " by ", arg "by"]
+        "remove" -> I.sendNotice $ T.concat ["Privclass", arg "name", " removed by ", arg "by"]
+        "show"   -> I.sendNotice $ fromJust $ body pkt
+        "privclass" -> I.sendNotice $ "Admin error: " `T.append` arg "e"
+    
+    x -> klogError $ "haven't handled " ++ show x
     
     where
         pkt = fromJust $ subPacket spk
         modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" (fromJust $ body spk))
         roomname = (deformatRoom . fromJust . parameter) spk
+        arg = flip getArg pkt
 
 respond _ "ping" = getK >>= \k -> io $ writeServer k ("pong\n\0" :: T.Text)
 

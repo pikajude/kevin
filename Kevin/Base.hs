@@ -27,10 +27,13 @@ module Kevin.Base (
     getPcLevel,
     getPc,
     setUserPrivclass,
+    changePrivclassName,
     
     logIn,
     
     addToJoin,
+    onJoining,
+    removeRoom,
     
     setTitle,
     onTitles,
@@ -66,6 +69,9 @@ import Kevin.Settings as K
 import qualified Data.Map as M
 import Data.Typeable
 import Kevin.Types
+
+mapWhen :: (a -> Bool) -> (a -> a) -> [a] -> [a]
+mapWhen f g = map (\x -> if f x then g x else x)
 
 runPrinter :: Chan T.Text -> Handle -> IO ()
 runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h . T.encodeUtf8
@@ -137,6 +143,9 @@ logIn k = k { loggedIn = True }
 addToJoin :: [T.Text] -> Kevin -> Kevin
 addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
 
+removeRoom :: Chatroom -> Kevin -> Kevin
+removeRoom c = onPrivclasses (M.delete c) . onUsers (M.delete c)
+
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
 
@@ -179,12 +188,18 @@ getPcLevel :: Chatroom -> T.Text -> PrivclassStore -> Int
 getPcLevel room pcname store = fromMaybe 0 $ M.lookup room store >>= M.lookup pcname
 
 setUserPrivclass :: Chatroom -> T.Text -> T.Text -> Kevin -> Kevin
-setUserPrivclass room user pc k = onUsers (M.adjust (map (\u -> if username u == user then u {privclass = pc, privclassLevel = pclevel} else u)) room) k
+setUserPrivclass room user pc k = onUsers (M.adjust (mapWhen ((user ==) . username) (\u -> u {privclass = pc, privclassLevel = pclevel})) room) k
     where
         pclevel = getPcLevel room pc $ privclasses k
+
+changePrivclassName :: Chatroom -> T.Text -> T.Text -> UserStore -> UserStore
+changePrivclassName room old new = M.adjust (mapWhen ((old ==) . privclass) (\u -> u {privclass = new})) room
 
 setTitle :: Chatroom -> Title -> TitleStore -> TitleStore
 setTitle = M.insert
 
 onTitles :: (TitleStore -> TitleStore) -> Kevin -> Kevin
 onTitles f k = k { titles = f (titles k) }
+
+onJoining :: ([T.Text] -> [T.Text]) -> Kevin -> Kevin
+onJoining f k = k { joining = f (joining k) }
