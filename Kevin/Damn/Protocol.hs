@@ -12,10 +12,12 @@ import Kevin.Util.Tablump
 import Kevin.Damn.Packet
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
-import Data.List (nub, delete)
+import Data.List (nub, delete, sortBy)
+import Data.Ord (comparing)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
 import Control.Arrow ((&&&))
+import Data.Time.Clock.POSIX (getPOSIXTime)
 
 initialize :: KevinIO ()
 initialize = sendHandshake
@@ -79,13 +81,23 @@ respond pkt "property" = case getArg "p" pkt of
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
             pc = privclass $ head $ filter (\x -> username x == uname) members
         modifyK (onUsers (setUsers roomname members))
-        when (elem (fromJust $ parameter pkt) j) $ do
+        when (fromJust (parameter pkt) `elem` j) $ do
             I.sendUserList uname (nub members) roomname
             I.sendWhoList uname (nub members) roomname
             I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
             modifyK (onJoining (delete $ fromJust $ parameter pkt))
         
-    x | "login:" `T.isPrefixOf` x -> klog Blue "got user info"
+    "info" -> do
+        us <- getsK (getUsername . settings)
+        curtime <- io $ fmap floor getPOSIXTime
+        let fixedPacket = parsePacket $ T.init $ T.replace "\n\nusericon" "\nusericon" $ asStringS pkt
+            uname = T.drop 6 $ fromJust $ parameter pkt
+            rn = getArg "realname" fixedPacket
+            conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) $ filter (not . T.null) $ T.splitOn "\n\n" $ fromJust $ body x)) $ fromJust $ fmap (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") $ body fixedPacket
+            allRooms = nub $ conns >>= (\(_,_,c) -> c)
+            (onlinespan,idle) = head $ sortBy (comparing fst) $ map (\(a,b,_) -> (a,b)) conns
+            signon = curtime - onlinespan
+        I.sendWhoisReply us uname (entityDecode rn) allRooms idle signon
     
     q -> klogError $ "Unrecognized property " ++ T.unpack q
     

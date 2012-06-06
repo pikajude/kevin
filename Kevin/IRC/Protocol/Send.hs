@@ -14,7 +14,8 @@ module Kevin.IRC.Protocol.Send (
     sendWhoList,
     sendPong,
     sendNoticeClone,
-    sendNoticeUnclone
+    sendNoticeUnclone,
+    sendWhoisReply
 ) where
     
 import Kevin.Base
@@ -56,6 +57,7 @@ sendWhoList :: Username -> [User] -> Room -> KevinIO ()
 sendPong :: T.Text -> KevinIO ()
 sendNoticeClone :: Username -> Int -> Room -> KevinIO ()
 sendNoticeUnclone :: Username -> Int -> Room -> KevinIO ()
+sendWhoisReply :: Username -> Username -> Username -> [Room] -> Int -> Int -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = getHost us
@@ -172,6 +174,32 @@ sendNoticeUnclone uname i rm = sendPacket
     where
         times | i == 1    = "once"
               | otherwise = T.pack (show i) `T.append` " times"
+
+sendWhoisReply me us rn rooms idle signon = sendPacket
+    Packet { prefix = hostname
+           , command = "311"
+           , params = [me, us, us, "chat.deviantart.com", "*", fixColon rn]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "307"
+           , params = [me, us, "is a registered nick"]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "319"
+           , params = [me, us, fixColon $ T.intercalate " " $ map (T.cons '#') rooms]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "312"
+           , params = [me, us, "chat.deviantart.com", ":dAmn"]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "317"
+           , params = [me, us, T.pack $ show idle, T.pack $ show signon, "seconds idle, signon time"]
+           } >> sendPacket
+    Packet { prefix = hostname
+           , command = "318"
+           , params = [me, us, "End of /WHOIS list."]
+           }
 
 levelToSym :: Int -> T.Text
 levelToSym x | x > 0  && x <= 35 = ""

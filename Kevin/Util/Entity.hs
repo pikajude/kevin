@@ -25,7 +25,7 @@ entityNumeric = do
 entityNamed :: Parser T.Text
 entityNamed = do
     char '&'
-    entity <- T.cons <$> letter <*> takeWhile1 (\x -> isAlpha x || isDigit x)
+    entity <- T.cons <$> letter <*> takeWhile1 isAlphaNum
     char ';'
     return $ fromMaybe (T.concat ["&", entity, ";"]) $ lookupNamedEntity entity
 

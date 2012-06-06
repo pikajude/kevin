@@ -51,19 +51,20 @@ respond pkt "PRIVMSG" = do
             D.sendAction room $ entityEncode newMsg
         else D.sendMsg room $ entityEncode msg
 
-respond pkt "MODE" = do
-    if length (params pkt) > 1
-        then do
-            let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
-            case mode of
-                "b" -> (if' toggle D.sendBan D.sendUnban) (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
-                "o" -> (if' toggle D.sendPromote D.sendDemote) (head $ params pkt) (last $ params pkt) Nothing
-                _ -> sendNotice $ "Unsupported mode " `T.append` mode
-        else do
-            uname <- getsK (getUsername . settings)
-            sendChanMode uname (head $ params pkt)
+respond pkt "MODE" = if length (params pkt) > 1
+    then do
+        let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
+        case mode of
+            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
+            "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
+            _ -> sendNotice $ "Unsupported mode " `T.append` mode
+    else do
+        uname <- getsK (getUsername . settings)
+        sendChanMode uname (head $ params pkt)
 
 respond pkt "PING" = sendPong (head $ params pkt)
+
+respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
 
 respond _ str = klogError $ T.unpack str
 

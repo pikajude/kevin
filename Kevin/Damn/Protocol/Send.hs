@@ -148,7 +148,14 @@ sendUnban room us = do
 
 sendKick = undefined
 sendGetProperty = undefined
-sendWhois = undefined
+
+sendWhois us = sendPacket
+    Packet { command = "get"
+           , parameter = Just $ "login:" `T.append` us
+           , args = [("p","info")]
+           , body = Nothing
+           }
+
 sendSet = undefined
 sendAdmin = undefined
 sendDisconnect = undefined
