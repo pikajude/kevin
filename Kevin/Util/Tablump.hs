@@ -1,4 +1,4 @@
-{-$$ OPTIONS_GHC -fno-warn-incomplete-patterns $$-}
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 module Kevin.Util.Tablump (
     tablumpDecode
