@@ -49,7 +49,7 @@ parseHead = do
     return $ Packet c p a Nothing
 
 parsePacket :: T.Text -> Packet
-parsePacket pack = let (top,b) = T.breakOn "\n\n" pack in case fmap (\x -> (x { body = if T.null b then Nothing else Just $ T.drop 2 b }) :: Packet) $ parseOnly parseHead top of
+parsePacket pack = let (top,b) = T.breakOn "\n\n" pack in case (\x -> (x { body = if T.null b then Nothing else Just $ T.drop 2 b }) :: Packet) <$> parseOnly parseHead top of
     Left _ -> throw ParseFailure
     Right pkt -> pkt
 

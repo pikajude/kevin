@@ -14,6 +14,7 @@ import Kevin.Util.Entity
 import Kevin.IRC.Packet
 import qualified Kevin.Damn.Protocol.Send as D
 import Kevin.IRC.Protocol.Send
+import Control.Applicative ((<$>))
 import Control.Arrow
 import Data.Maybe
 
@@ -28,7 +29,7 @@ cleanup = klog Green "cleanup client"
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
     k <- getK
-    pkt <- io $ fmap parsePacket $ readClient k
+    pkt <- io $ parsePacket <$> readClient k
     respond pkt (command pkt)
     listen
 
@@ -87,7 +88,7 @@ notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h asSt
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle authRetry = do
-    pkt <- io $ fmap parsePacket $ T.hGetLine handle
+    pkt <- io $ parsePacket <$> T.hGetLine handle
     io $ klogNow Yellow $ "client <- " ++ T.unpack (asStringC pkt)
     case command pkt of
         "PASS" -> do

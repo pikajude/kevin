@@ -47,7 +47,7 @@ entityEncodeS (x:xs) | x < '\127' = [x]:entityEncodeS xs
                      | otherwise  = ("&#" ++ show (ord x) ++ ";"):entityEncodeS xs
 
 lookupNamedEntity :: T.Text -> Maybe T.Text
-lookupNamedEntity ent = fmap (T.singleton . chr) $ lookup ent namedEntities
+lookupNamedEntity ent = (T.singleton . chr) <$> lookup ent namedEntities
 
 lookupHexEntity :: T.Text -> Maybe T.Text
 lookupHexEntity e = case R.hexadecimal $ T.cons '0' e of

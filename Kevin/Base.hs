@@ -59,6 +59,7 @@ import Data.Maybe
 import System.IO as K (Handle, hClose, hIsClosed, hGetChar)
 import Control.Exception as K (IOException)
 import Network as K
+import Control.Applicative ((<$>))
 import Control.Monad.Reader
 import Control.Monad.State as K
 import Control.Concurrent as K (forkIO)
@@ -106,15 +107,15 @@ hGetSep sep h = do
     ch <- hGetChar h
     if ch == sep
         then return ""
-        else fmap (ch:) $ hGetSep sep h
+        else (ch:) <$> hGetSep sep h
 
 instance KevinServer Kevin where
     readClient k = do
-        line <- fmap T.decodeUtf8 $ T.hGetLine $ irc k
+        line <- T.decodeUtf8 <$> T.hGetLine (irc k)
         klog_ (logger k) Yellow $ "client <- " ++ padLines 10 line
         return $ T.init line
     readServer k = do
-        line <- fmap T.pack $ hGetSep '\x0' $ damn k
+        line <- T.pack <$> hGetSep '\NUL' (damn k)
         klog_ (logger k) Cyan $ "server <- " ++ padLines 10 line
         return line
     
@@ -181,7 +182,7 @@ onPrivclasses f k = k { privclasses = f (privclasses k) }
 
 getPc :: Chatroom -> T.Text -> UserStore -> Maybe T.Text
 getPc room user st = case M.lookup room st of
-    Just qs -> fmap privclass $ listToMaybe $ filter (\u -> username u == user) qs
+    Just qs -> privclass <$> listToMaybe (filter (\u -> username u == user) qs)
     Nothing -> Nothing
 
 getPcLevel :: Chatroom -> T.Text -> PrivclassStore -> Int

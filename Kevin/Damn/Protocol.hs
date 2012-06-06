@@ -16,6 +16,7 @@ import Data.List (nub, delete, sortBy)
 import Data.Ord (comparing)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
+import Control.Applicative ((<$>))
 import Control.Arrow ((&&&))
 import Data.Time.Clock.POSIX (getPOSIXTime)
 
@@ -28,7 +29,7 @@ cleanup = klog Blue "cleanup server"
 listen :: KevinIO ()
 listen = flip catches errHandlers $ do
     k <- getK
-    pkt <- io $ fmap parsePacket $ readServer k
+    pkt <- io $ parsePacket <$> readServer k
     respond pkt (command pkt)
     listen
 
@@ -89,11 +90,11 @@ respond pkt "property" = case getArg "p" pkt of
         
     "info" -> do
         us <- getsK (getUsername . settings)
-        curtime <- io $ fmap floor getPOSIXTime
+        curtime <- io $ floor <$> getPOSIXTime
         let fixedPacket = parsePacket $ T.init $ T.replace "\n\nusericon" "\nusericon" $ asStringS pkt
             uname = T.drop 6 $ fromJust $ parameter pkt
             rn = getArg "realname" fixedPacket
-            conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) $ filter (not . T.null) $ T.splitOn "\n\n" $ fromJust $ body x)) $ fromJust $ fmap (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") $ body fixedPacket
+            conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) $ filter (not . T.null) $ T.splitOn "\n\n" $ fromJust $ body x)) $ fromJust $ (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") <$> body fixedPacket
             allRooms = nub $ conns >>= (\(_,_,c) -> c)
             (onlinespan,idle) = head $ sortBy (comparing fst) $ map (\(a,b,_) -> (a,b)) conns
             signon = curtime - onlinespan

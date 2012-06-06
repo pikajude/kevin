@@ -22,6 +22,7 @@ import Kevin.Base
 import Kevin.IRC.Packet
 import qualified Data.Text as T
 import Data.Maybe
+import Control.Applicative ((<$>))
 
 fixColon :: T.Text -> T.Text
 fixColon str = if " " `T.isInfixOf` str then str else ':' `T.cons` str
@@ -68,7 +69,7 @@ sendJoin us rm = sendPacket
 sendPart us rm msg = sendPacket
     Packet { prefix = getHost us
            , command = "PART"
-           , params = rm:fmap fixColon (maybeToList msg)
+           , params = rm:(fixColon <$> maybeToList msg)
            }
 
 sendSetUserMode us rm m = unless (T.null mode) $ sendPacket
@@ -111,7 +112,7 @@ sendPrivMsg = undefined
 sendKick kickee kicker room msg = sendPacket
     Packet { prefix = getHost kicker
            , command = "KICK"
-           , params = [room, kickee] ++ maybeToList (fmap fixColon msg)
+           , params = [room, kickee] ++ maybeToList (fixColon <$> msg)
            }
 
 sendTopic us rm maker top startdate = sendPacket
