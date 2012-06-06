@@ -148,8 +148,9 @@ respond spk "recv" = case command pkt of
         "remove" -> I.sendNotice $ T.concat ["Privclass", arg "name", " removed by ", arg "by"]
         "show"   -> I.sendNotice $ fromJust $ body pkt
         "privclass" -> I.sendNotice $ "Admin error: " `T.append` arg "e"
+        q -> klogError $ "Unknown admin packet type " ++ show q
     
-    x -> klogError $ "haven't handled " ++ show x
+    x -> klogError $ "Unknown packet type " ++ show x
     
     where
         pkt = fromJust $ subPacket spk
