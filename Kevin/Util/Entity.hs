@@ -9,6 +9,7 @@ import Data.Attoparsec.Text
 import Data.Char
 import qualified Data.Text.Read as R
 import Control.Monad (guard)
+import Control.Monad.Fix
 import Control.Applicative ((<|>), (<$>), (<*>))
 import Data.Maybe
 
@@ -42,9 +43,10 @@ entityEncode :: T.Text -> T.Text
 entityEncode = T.pack . concat . entityEncodeS . T.unpack
 
 entityEncodeS :: String -> [String]
-entityEncodeS [] = []
-entityEncodeS (x:xs) | x < '\127' = [x]:entityEncodeS xs
-                     | otherwise  = ("&#" ++ show (ord x) ++ ";"):entityEncodeS xs
+entityEncodeS = fix (\f str -> case str of
+    [] -> []
+    (x:xs) -> if x < '\127' then [x]:f xs
+                            else ("&#" ++ show (ord x) ++ ";"):f xs)
 
 lookupNamedEntity :: T.Text -> Maybe T.Text
 lookupNamedEntity ent = (T.singleton . chr) <$> lookup ent namedEntities

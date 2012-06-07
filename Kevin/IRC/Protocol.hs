@@ -27,11 +27,11 @@ cleanup :: KevinIO ()
 cleanup = klog Green "cleanup client"
 
 listen :: KevinIO ()
-listen = flip catches errHandlers $ do
+listen = fix (\f -> flip catches errHandlers $ do
     k <- getK
     pkt <- io $ parsePacket <$> readClient k
     respond pkt (command pkt)
-    listen
+    f)
 
 respond :: Packet -> T.Text -> KevinIO ()
 respond pkt "JOIN" = do
@@ -87,7 +87,7 @@ notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h asSt
         asStr = asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
-getAuthInfo handle authRetry = do
+getAuthInfo handle = fix (\f authRetry -> do
     pkt <- io $ parsePacket <$> T.hGetLine handle
     io $ klogNow Yellow $ "client <- " ++ T.unpack (asStringC pkt)
     case command pkt of
@@ -95,14 +95,14 @@ getAuthInfo handle authRetry = do
             modify (setPassword $ head $ params pkt)
             if authRetry
                then checkToken handle
-               else getAuthInfo handle False
+               else f False
         "NICK" -> do
             modify (setUsername $ head $ params pkt)
-            getAuthInfo handle False
+            f False
         "USER" -> welcome handle
         _ -> do
             io $ klogNow Red $ "invalid packet: " ++ show pkt
-            when authRetry $ getAuthInfo handle True
+            when authRetry $ f True)
 
 welcome :: Handle -> KevinState ()
 welcome handle = do

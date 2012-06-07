@@ -8,6 +8,7 @@ import Text.Regex.PCRE
 import Text.Regex.PCRE.String
 import Text.Printf
 import Control.Arrow
+import Control.Monad.Fix
 import System.IO.Unsafe
 import qualified Data.Text as T
 
@@ -16,9 +17,9 @@ fromRight (Left x) = error $ "fromRight on Left " ++ show x
 fromRight (Right a) = a
 
 regexReplace :: Regex -> ([String] -> String) -> String -> String
-regexReplace find replace str = case fromRight $ unsafePerformIO $ regexec find str of
-    Just (bef, _, af, matches) -> concat [bef, replace matches, regexReplace find replace af]
-    Nothing -> str
+regexReplace find replace = fix (\f str -> case fromRight $ unsafePerformIO $ regexec find str of
+    Just (bef, _, af, matches) -> concat [bef, replace matches, f af]
+    Nothing -> str)
 
 regexen :: [(Regex, [String] -> String)]
 regexen = let ($$) = (,) in map (first (fromRight . unsafePerformIO . compile defaultCompOpt defaultExecOpt)) [

@@ -16,6 +16,7 @@ import Data.Attoparsec.Text
 import Data.Char
 import Control.Applicative (many, (<$>))
 import Control.Monad (liftM2)
+import Control.Monad.Fix
 import Data.Maybe
 
 data Packet = Packet { command :: T.Text
@@ -75,9 +76,7 @@ parsePrivclasses :: T.Text -> [Privclass]
 parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . (!! 0)) . T.splitOn ":") . filter (not . T.null) . T.splitOn "\n"
 
 splitOn :: T.Text -> T.Text -> [T.Text]
-splitOn delim str = if T.null l then [f] else f:splitOn delim (T.drop (T.length delim) l)
-    where
-        (f,l) = T.breakOn delim str
+splitOn delim = fix (\rec s -> let (f,l) = T.breakOn delim s in if T.null l then [f] else f:rec (T.drop (T.length delim) l))
 
 instance KServerPacket Packet where
     asStringS (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `T.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `T.append`) bod +++ "\n\0"

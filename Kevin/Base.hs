@@ -103,11 +103,11 @@ padLines :: Int -> T.Text -> String
 padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") $ intercalate "\n" $ map (replicate len ' ' ++) rest
 
 hGetSep :: Char -> Handle -> IO String
-hGetSep sep h = do
+hGetSep sep h = fix (\f -> do
     ch <- hGetChar h
     if ch == sep
         then return ""
-        else (ch:) <$> hGetSep sep h
+        else (ch:) <$> f)
 
 instance KevinServer Kevin where
     readClient k = do

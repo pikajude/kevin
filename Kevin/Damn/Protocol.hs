@@ -27,11 +27,11 @@ cleanup :: KevinIO ()
 cleanup = klog Blue "cleanup server"
 
 listen :: KevinIO ()
-listen = flip catches errHandlers $ do
+listen = fix (\f -> flip catches errHandlers $ do
     k <- getK
     pkt <- io $ parsePacket <$> readServer k
     respond pkt (command pkt)
-    listen
+    f)
 
 -- main responder
 respond :: Packet -> T.Text -> KevinIO ()
