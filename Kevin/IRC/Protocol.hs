@@ -67,6 +67,10 @@ respond pkt "PING" = sendPong (head $ params pkt)
 
 respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
 
+respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
+
+respond _ "QUIT" = klogError "client quit" >> undefined
+
 respond _ str = klogError $ T.unpack str
 
 
