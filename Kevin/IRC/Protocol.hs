@@ -21,19 +21,19 @@ import qualified Data.Map as M
 
 type KevinState = StateT Settings IO
 
-cleanup :: KevinIO ()
+cleanup ∷ KevinIO ()
 cleanup = klog Green "cleanup client"
 
-listen :: KevinIO ()
-listen = fix (\f -> flip catches errHandlers $ do
-    k <- getK
-    pkt <- io $ parsePacket <$> readClient k
+listen ∷ KevinIO ()
+listen = fix (\f → flip catches errHandlers $ do
+    k ← getK
+    pkt ← io $ parsePacket <$> readClient k
     respond pkt (command pkt)
     f)
 
-respond :: Packet -> T.Text -> KevinIO ()
+respond ∷ Packet → T.Text → KevinIO ()
 respond pkt "JOIN" = do
-    l <- getsK loggedIn
+    l ← getsK loggedIn
     if l
         then mapM_ D.sendJoin rooms
         else modifyK (addToJoin rooms)
@@ -54,11 +54,11 @@ respond pkt "MODE" = if length (params pkt) > 1
     then do
         let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
         case mode of
-            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
-            "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
-            _ -> sendNotice $ "Unsupported mode " `T.append` mode
+            "b" → if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
+            "o" → if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
+            _ → sendNotice $ "Unsupported mode " `T.append` mode
     else do
-        uname <- getsK (getUsername . settings)
+        uname ← getsK (getUsername . settings)
         sendChanMode uname (head $ params pkt)
 
 respond pkt "PING" = sendPong (head $ params pkt)
@@ -67,7 +67,7 @@ respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- getsK (getUsername . settings &&& M.lookup room . users)
+    (me,uss) ← getsK (getUsername . settings &&& M.lookup room . users)
     sendUserList me (fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
@@ -77,44 +77,44 @@ respond _ "QUIT" = klogError "client quit" >> undefined
 respond _ str = klogError $ T.unpack str
 
 
-unmask :: T.Text -> Maybe T.Text
+unmask ∷ T.Text → Maybe T.Text
 unmask y = case T.split (`elem` "@!") y of
-    [s] -> Just s
-    xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
+    [s] → Just s
+    xs → listToMaybe $ filter (not . T.isInfixOf "*") xs
 
-errHandlers :: [Handler KevinIO ()]
+errHandlers ∷ [Handler KevinIO ()]
 errHandlers = [
-    Handler (\(_ :: KevinException) -> klogError "Bad communication from client"),
-    Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
+    Handler (\(_ ∷ KevinException) → klogError "Bad communication from client"),
+    Handler (\(e ∷ IOException) → klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
-notice :: Handle -> T.Text -> IO ()
-notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h asStr
+notice ∷ Handle → T.Text → IO ()
+notice h str = klogNow Blue ("client → " ++ T.unpack asStr) >> T.hPutStr h asStr
     where
         asStr = asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
 
-getAuthInfo :: Handle -> Bool -> KevinState ()
-getAuthInfo handle = fix (\f authRetry -> do
-    pkt <- io $ parsePacket <$> T.hGetLine handle
-    io $ klogNow Yellow $ "client <- " ++ T.unpack (asStringC pkt)
+getAuthInfo ∷ Handle → Bool → KevinState ()
+getAuthInfo handle = fix (\f authRetry → do
+    pkt ← io $ parsePacket <$> T.hGetLine handle
+    io $ klogNow Yellow $ "client ← " ++ T.unpack (asStringC pkt)
     case command pkt of
-        "PASS" -> do
+        "PASS" → do
             modify (setPassword $ head $ params pkt)
             if authRetry
                then checkToken handle
                else f False
-        "NICK" -> do
+        "NICK" → do
             modify (setUsername $ head $ params pkt)
             f False
-        "USER" -> welcome handle
-        _ -> do
+        "USER" → welcome handle
+        _ → do
             io $ klogNow Red $ "invalid packet: " ++ show pkt
             when authRetry $ f True)
 
-welcome :: Handle -> KevinState ()
+welcome ∷ Handle → KevinState ()
 welcome handle = do
-    nick <- gets getUsername
-    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ T.unpack (asStringC x)) >> T.hPutStr handle (asStringC x)) [
+    nick ← gets getUsername
+    mapM_ (\x → io $ klogNow Blue ("client → " ++ T.unpack (asStringC x)) >> T.hPutStr handle (asStringC x)) [
         Packet { prefix = hostname
                , command = "001"
                , params = [nick, T.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]
@@ -156,17 +156,17 @@ welcome handle = do
     where
         hostname = Just "chat.deviantart.com"
 
-checkToken :: Handle -> KevinState ()
+checkToken ∷ Handle → KevinState ()
 checkToken handle = do
-    nick <- gets getUsername
-    pass <- gets getPassword
+    nick ← gets getUsername
+    pass ← gets getPassword
     io $ notice handle "Fetching token..."
-    tok <- io $ getToken nick pass
+    tok ← io $ getToken nick pass
     case tok of
-        Just t -> do
+        Just t → do
             modify (setAuthtoken t)
             io $ notice handle "Successfully authenticated."
-        Nothing -> do
+        Nothing → do
             io $ notice handle "Bad password, try again. (/quote pass yourpassword)"
             getAuthInfo handle True
 

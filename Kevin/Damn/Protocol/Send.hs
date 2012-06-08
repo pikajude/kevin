@@ -28,23 +28,23 @@ import qualified Data.Text as T
 import Data.List (sort)
 import Data.Char (toLower)
 
-sendPacket :: Packet -> KevinIO ()
-sendPacket p = getK >>= \k -> io $ writeServer k p
+sendPacket ∷ Packet → KevinIO ()
+sendPacket p = getK >>= \k → io $ writeServer k p
 
-formatRoom :: T.Text -> KevinIO T.Text
+formatRoom ∷ T.Text → KevinIO T.Text
 formatRoom b = 
     case T.splitAt 1 b of
-        ("#",s) -> return $ "chat:" `T.append` s
-        ("&",s) -> do
-            uname <- getsK (getUsername . settings)
+        ("#",s) → return $ "chat:" `T.append` s
+        ("&",s) → do
+            uname ← getsK (getUsername . settings)
             return $ T.append "pchat:" $ T.intercalate ":" $ sort $ map (T.map toLower) [uname, s]
-        r -> return $ "chat" `T.append` uncurry T.append r
+        r → return $ "chat" `T.append` uncurry T.append r
 
-deformatRoom :: T.Text -> KevinIO T.Text
+deformatRoom ∷ T.Text → KevinIO T.Text
 deformatRoom room = if "chat:" `T.isPrefixOf` room
     then return $ '#' `T.cons` T.drop 5 room
     else do
-        uname <- getsK (getUsername . settings)
+        uname ← getsK (getUsername . settings)
         return $ '&' `T.cons` head (filter (/= uname) $ T.splitOn ":" $ T.drop 6 room)
 
 type Str = T.Text -- just make it shorter
@@ -53,18 +53,18 @@ type Username = Str
 type Pc = Str
 
 -- * Communication to the server
-sendHandshake :: KevinIO ()
-sendLogin :: Username -> Str -> KevinIO ()
-sendJoin, sendPart :: Room -> KevinIO ()
-sendMsg, sendAction, sendNpMsg :: Room -> Str -> KevinIO ()
-sendPromote, sendDemote :: Room -> Username -> Maybe Pc -> KevinIO ()
-sendBan, sendUnban :: Room -> Username -> KevinIO ()
-sendKick :: Room -> Username -> Maybe Str -> KevinIO ()
-sendGetProperty :: Room -> Str -> KevinIO ()
-sendWhois :: Username -> KevinIO ()
-sendSet :: Room -> Str -> Str -> KevinIO ()
-sendAdmin :: Room -> Str -> KevinIO ()
-sendKill :: Username -> Str -> KevinIO ()
+sendHandshake ∷ KevinIO ()
+sendLogin ∷ Username → Str → KevinIO ()
+sendJoin, sendPart ∷ Room → KevinIO ()
+sendMsg, sendAction, sendNpMsg ∷ Room → Str → KevinIO ()
+sendPromote, sendDemote ∷ Room → Username → Maybe Pc → KevinIO ()
+sendBan, sendUnban ∷ Room → Username → KevinIO ()
+sendKick ∷ Room → Username → Maybe Str → KevinIO ()
+sendGetProperty ∷ Room → Str → KevinIO ()
+sendWhois ∷ Username → KevinIO ()
+sendSet ∷ Room → Str → Str → KevinIO ()
+sendAdmin ∷ Room → Str → KevinIO ()
+sendKill ∷ Username → Str → KevinIO ()
 
 sendHandshake = sendPacket
     Packet { command = "dAmnClient"
@@ -81,7 +81,7 @@ sendLogin u token = sendPacket
            }
 
 sendJoin room = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "join"
                       , parameter = Just roomname
                       , args = []
@@ -89,7 +89,7 @@ sendJoin room = do
                       }
 
 sendPart room = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "part"
                       , parameter = Just roomname
                       , args = []
@@ -97,7 +97,7 @@ sendPart room = do
                       }
 
 sendMsg room msg = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "send"
                       , parameter = Just roomname
                       , args = []
@@ -105,7 +105,7 @@ sendMsg room msg = do
                       }
 
 sendAction room msg = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "send"
                       , parameter = Just roomname
                       , args = []
@@ -115,7 +115,7 @@ sendAction room msg = do
 sendNpMsg = undefined
 
 sendPromote room us pc = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "send"
                       , parameter = Just roomname
                       , args = []
@@ -123,7 +123,7 @@ sendPromote room us pc = do
                       }
 
 sendDemote room us pc = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "send"
                       , parameter = Just roomname
                       , args = []
@@ -131,7 +131,7 @@ sendDemote room us pc = do
                       }
 
 sendBan room us = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "send"
                       , parameter = Just roomname
                       , args = []
@@ -139,7 +139,7 @@ sendBan room us = do
                       }
 
 sendUnban room us = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "send"
                       , parameter = Just roomname
                       , args = []
@@ -147,7 +147,7 @@ sendUnban room us = do
                       }
 
 sendKick room us reason = do
-    roomname <- formatRoom room
+    roomname ← formatRoom room
     sendPacket Packet { command = "kick"
                       , parameter = Just roomname
                       , args = [("u",us)]

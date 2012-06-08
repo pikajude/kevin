@@ -18,6 +18,6 @@ Executable kevin
     Main-is:          Main.hs
     Build-Depends:    attoparsec == 0.10.*, base == 4.*, bytestring == 0.9.*, containers == 0.4.*, curl == 1.3.*, HTTP == 4000.2.*, MonadCatchIO-mtl == 0.3.*, mtl == 2.1.*, network == 2.3.*, regex-pcre == 0.94.*, stm == 2.3.*, text == 0.11.*, time == 1.4.*
     Other-Modules:    Kevin, Kevin.Protocol, Kevin.Base, Kevin.Util.Logger, Kevin.IRC.Protocol, Kevin.Damn.Protocol, Kevin.Util.Entity, Kevin.Util.Tablump, Kevin.Damn.Packet, Kevin.Damn.Protocol.Send, Kevin.IRC.Protocol.Send, Kevin.IRC.Packet, Kevin.Settings, Kevin.Types, Kevin.Util.Token
-    extensions:       ScopedTypeVariables, DeriveDataTypeable, OverloadedStrings, ExistentialQuantification, CPP
+    extensions:       ScopedTypeVariables, DeriveDataTypeable, OverloadedStrings, ExistentialQuantification, CPP, UnicodeSyntax
     ghc-options:      -Wall -fno-warn-unused-do-bind -threaded
     cpp-options:      -DVERSION="0.0"
