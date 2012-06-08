@@ -21,9 +21,6 @@ import qualified Data.Map as M
 
 type KevinState = StateT Settings IO
 
-if' :: Bool -> a -> a -> a
-if' x y z = if x then y else z
-
 cleanup :: KevinIO ()
 cleanup = klog Green "cleanup client"
 

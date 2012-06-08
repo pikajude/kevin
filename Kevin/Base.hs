@@ -47,7 +47,9 @@ module Kevin.Base (
     getK,
     putK,
     getsK,
-    modifyK
+    modifyK,
+    
+    if'
 ) where
 
 import Kevin.Util.Logger
@@ -70,6 +72,9 @@ import Kevin.Settings as K
 import qualified Data.Map as M
 import Data.Typeable
 import Kevin.Types
+
+if' :: Bool -> a -> a -> a
+if' x y z = if x then y else z
 
 mapWhen :: (a -> Bool) -> (a -> a) -> [a] -> [a]
 mapWhen f g = map (\x -> if f x then g x else x)
@@ -103,11 +108,7 @@ padLines :: Int -> T.Text -> String
 padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") $ intercalate "\n" $ map (replicate len ' ' ++) rest
 
 hGetSep :: Char -> Handle -> IO String
-hGetSep sep h = fix (\f -> do
-    ch <- hGetChar h
-    if ch == sep
-        then return ""
-        else (ch:) <$> f)
+hGetSep sep h = fix (\f -> hGetChar h >>= \ch -> if ch == sep then return "" else (ch:) <$> f)
 
 instance KevinServer Kevin where
     readClient k = do
