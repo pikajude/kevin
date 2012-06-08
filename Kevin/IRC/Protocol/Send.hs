@@ -135,15 +135,23 @@ sendChanMode us rm = sendPacket
            , params = [us, rm, "767529000"]
            }
 
-sendUserList us uss rm = sendPacket
+sendUserList us uss rm = mapM_ (\nms -> sendPacket
     Packet { prefix = hostname
            , command = "353"
-           , params = [us, "=", rm, T.intercalate " " (map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss)]
-           } >> sendPacket
+           , params = [us, "=", rm, T.intercalate " " nms]
+           }) chunkedNames >> sendPacket
     Packet { prefix = hostname
            , command = "366"
            , params = [us, rm, "End of NAMES list."]
            }
+    where
+        names = map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss
+        chunkedNames = reverse $ map reverse $ subchunk' 432 names [[]]
+        subchunk' n = fix (\f x y -> let hy = head y; hx = head x; ty = tail y; tx = tail x in if null x
+            then y
+            else if sum (map T.length hy) + T.length hx <= n
+                then f tx ((hx:hy):ty)
+                else f tx ([hx]:y))
 
 sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
     Packet { prefix = hostname

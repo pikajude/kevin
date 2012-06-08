@@ -19,7 +19,6 @@ module Kevin.Damn.Protocol.Send (
     sendWhois,
     sendSet,
     sendAdmin,
-    sendDisconnect,
     sendKill
 ) where
 
@@ -63,7 +62,6 @@ sendGetProperty :: Room -> Str -> KevinIO ()
 sendWhois :: Username -> KevinIO ()
 sendSet :: Room -> Str -> Str -> KevinIO ()
 sendAdmin :: Room -> Str -> KevinIO ()
-sendDisconnect :: KevinIO ()
 sendKill :: Username -> Str -> KevinIO ()
 
 sendHandshake = sendPacket
@@ -165,5 +163,4 @@ sendWhois us = sendPacket
 
 sendSet = undefined
 sendAdmin = undefined
-sendDisconnect = undefined
 sendKill = undefined

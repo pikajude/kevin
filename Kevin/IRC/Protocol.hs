@@ -17,6 +17,7 @@ import Kevin.IRC.Protocol.Send
 import Control.Applicative ((<$>))
 import Control.Arrow
 import Data.Maybe
+import qualified Data.Map as M
 
 type KevinState = StateT Settings IO
 
@@ -66,6 +67,11 @@ respond pkt "MODE" = if length (params pkt) > 1
 respond pkt "PING" = sendPong (head $ params pkt)
 
 respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
+
+respond pkt "NAMES" = do
+    let (room:_) = params pkt
+    (me,uss) <- getsK (getUsername . settings &&& M.lookup room . users)
+    sendUserList me (fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
 
