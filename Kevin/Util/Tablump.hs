@@ -12,16 +12,16 @@ import Control.Monad.Fix
 import System.IO.Unsafe
 import qualified Data.Text as T
 
-fromRight :: (Show a) => Either a b -> b
+fromRight ∷ (Show a) ⇒ Either a b → b
 fromRight (Left x) = error $ "fromRight on Left " ++ show x
 fromRight (Right a) = a
 
-regexReplace :: Regex -> ([String] -> String) -> String -> String
-regexReplace find replace = fix (\f str -> case fromRight $ unsafePerformIO $ regexec find str of
-    Just (bef, _, af, matches) -> concat [bef, replace matches, f af]
-    Nothing -> str)
+regexReplace ∷ Regex → ([String] → String) → String → String
+regexReplace find replace = fix (\f str → case fromRight $ unsafePerformIO $ regexec find str of
+    Just (bef, _, af, matches) → concat [bef, replace matches, f af]
+    Nothing → str)
 
-regexen :: [(Regex, [String] -> String)]
+regexen ∷ [(Regex, [String] → String)]
 regexen = let ($$) = (,) in map (first (fromRight . unsafePerformIO . compile defaultCompOpt defaultExecOpt)) [
         "&b\t"      $$ const "\2",
         "&/b\t"     $$ const "\15",
@@ -52,17 +52,17 @@ regexen = let ($$) = (,) in map (first (fromRight . unsafePerformIO . compile de
         "&p\t"      $$ const "",
         "&/p\t"     $$ const "\n",
         "&emote\t(.+?)\t.+?\t.+?\t.+?\t.+?\t" $$ head,
-        "&a\t(.+?)\t.*?\t" $$ \(x:_) -> printf "%s (" x,
+        "&a\t(.+?)\t.*?\t" $$ \(x:_) → printf "%s (" x,
         "&link\t(.+?)\t&\t" $$ head,
-        "&link\t(.+?)\t(.+?)\t&\t" $$ \(x:y:_) -> printf "%s (%s)" x y,
+        "&link\t(.+?)\t(.+?)\t&\t" $$ \(x:y:_) → printf "%s (%s)" x y,
         "&dev\t.+\t(.+?)\t" $$ head,
-        "&avatar\t(.+?)\t.+?\t" $$ \(x:_) -> printf ":icon%s:" x,
-        "&thumb\t(.+?)\t.+?\t.+?\t.+?\t.+?\t.+?\t.+?\t" $$ \(x:_) -> printf ":thumb%s:" x,
-        "&img\t(.+?)\t(.*?)\t(.*?)\t" $$ \(x:y:z:_) -> printf "<img src='%s' alt='%s' title='%s' />" x y z,
-        "&iframe\t(.+?)\t(.*?)\t(.*?)\t" $$ \(x:y:z:_) -> printf "<iframe src='%s' width='%s' height='%s' />" x y z,
-        "&acro\t(.+?)\t" $$ \(x:_) -> printf "<acronym title='%s'>" x,
-        "&abbr\t(.+?)\t" $$ \(x:_) -> printf "<abbr title='%s'>" x
+        "&avatar\t(.+?)\t.+?\t" $$ \(x:_) → printf ":icon%s:" x,
+        "&thumb\t(.+?)\t.+?\t.+?\t.+?\t.+?\t.+?\t.+?\t" $$ \(x:_) → printf ":thumb%s:" x,
+        "&img\t(.+?)\t(.*?)\t(.*?)\t" $$ \(x:y:z:_) → printf "<img src='%s' alt='%s' title='%s' />" x y z,
+        "&iframe\t(.+?)\t(.*?)\t(.*?)\t" $$ \(x:y:z:_) → printf "<iframe src='%s' width='%s' height='%s' />" x y z,
+        "&acro\t(.+?)\t" $$ \(x:_) → printf "<acronym title='%s'>" x,
+        "&abbr\t(.+?)\t" $$ \(x:_) → printf "<abbr title='%s'>" x
     ]
 
-tablumpDecode :: T.Text -> T.Text
+tablumpDecode ∷ T.Text → T.Text
 tablumpDecode = T.pack . flip (foldr (uncurry regexReplace)) regexen . T.unpack

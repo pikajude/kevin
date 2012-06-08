@@ -8,18 +8,18 @@ module Kevin.Settings (
     
 import Data.Text
 
-data Settings = Settings { getUsername :: Text
-                         , getPassword :: Text
-                         , getAuthtoken :: Text
+data Settings = Settings { getUsername ∷ Text
+                         , getPassword ∷ Text
+                         , getAuthtoken ∷ Text
                          } deriving (Show)
 
-emptySettings :: Settings
+emptySettings ∷ Settings
 emptySettings = Settings { getUsername = ""
                          , getPassword = ""
                          , getAuthtoken = ""
                          }
 
-setUsername, setAuthtoken, setPassword :: Text -> Settings -> Settings
+setUsername, setAuthtoken, setPassword ∷ Text → Settings → Settings
 
 setUsername  str set = set { getUsername  = str }
 setAuthtoken str set = set { getAuthtoken = str }

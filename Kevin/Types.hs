@@ -23,48 +23,48 @@ import Control.Monad.State
 import Control.Monad.STM (atomically)
 import Kevin.Settings
 
-data Kevin = Kevin { damn :: Handle
-                   , irc :: Handle
-                   , dChan :: Chan T.Text
-                   , iChan :: Chan T.Text
-                   , settings :: Settings
-                   , users :: UserStore
-                   , privclasses :: PrivclassStore
-                   , titles :: TitleStore
-                   , toJoin :: [T.Text]
-                   , joining :: [T.Text]
-                   , loggedIn :: Bool
-                   , logger :: Chan String
+data Kevin = Kevin { damn ∷ Handle
+                   , irc ∷ Handle
+                   , dChan ∷ Chan T.Text
+                   , iChan ∷ Chan T.Text
+                   , settings ∷ Settings
+                   , users ∷ UserStore
+                   , privclasses ∷ PrivclassStore
+                   , titles ∷ TitleStore
+                   , toJoin ∷ [T.Text]
+                   , joining ∷ [T.Text]
+                   , loggedIn ∷ Bool
+                   , logger ∷ Chan String
                    }
 
 type KevinIO = StateT (TVar Kevin) IO
 
-getK :: KevinIO Kevin
+getK ∷ KevinIO Kevin
 getK = get >>= liftIO . readTVarIO
 
-putK :: Kevin -> KevinIO ()
+putK ∷ Kevin → KevinIO ()
 putK k = get >>= io . atomically . flip writeTVar k
 
-getsK :: (Kevin -> a) -> KevinIO a
+getsK ∷ (Kevin → a) → KevinIO a
 getsK = flip liftM getK
 
-modifyK :: (Kevin -> Kevin) -> KevinIO ()
+modifyK ∷ (Kevin → Kevin) → KevinIO ()
 modifyK f = do
-    var <- get
+    var ← get
     (io . atomically) $ modifyTVar var f
 
-io :: MonadIO m => IO a -> m a
+io ∷ MonadIO m ⇒ IO a → m a
 io = liftIO
 
 type Chatroom = T.Text
 
-data User = User { username :: T.Text
-                 , privclass :: T.Text
-                 , privclassLevel :: Int
-                 , symbol :: T.Text
-                 , realname :: T.Text
-                 , typename :: T.Text
-                 , gpc :: T.Text
+data User = User { username ∷ T.Text
+                 , privclass ∷ T.Text
+                 , privclassLevel ∷ Int
+                 , symbol ∷ T.Text
+                 , realname ∷ T.Text
+                 , typename ∷ T.Text
+                 , gpc ∷ T.Text
                  } deriving (Eq, Show)
 
 type UserStore = M.Map Chatroom [User]
