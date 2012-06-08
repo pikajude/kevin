@@ -39,9 +39,7 @@ klogNow :: Color -> String -> IO ()
 klogNow c s = putStrLn $ render c s
 
 klog :: Color -> String -> KevinIO ()
-klog c str = do
-    ch <- getsK logger
-    liftIO $ klog_ ch c str
+klog c str = getsK logger >>= \ch -> liftIO $ klog_ ch c str
 
 klogError, klogWarn :: String -> KevinIO ()
 
