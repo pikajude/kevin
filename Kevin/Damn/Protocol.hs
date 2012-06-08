@@ -47,26 +47,28 @@ respond pkt "login" = if okay pkt
         getsK toJoin >>= mapM_ sendJoin
     else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
-respond pkt "join" = if okay pkt
-    then do
-        modifyK (onJoining (r:))
-        uname <- getsK (getUsername . settings)
-        I.sendJoin uname roomname
-    else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
+respond pkt "join" = do
+    roomname <- deformatRoom r
+    if okay pkt
+        then do
+            modifyK (onJoining (r:))
+            uname <- getsK (getUsername . settings)
+            I.sendJoin uname roomname
+        else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
     where
         r = fromJust $ parameter pkt
-        roomname = deformatRoom r
 
-respond pkt "part" = if okay pkt
-    then do
-        uname <- getsK (getUsername . settings)
-        modifyK (removeRoom roomname)
-        I.sendPart uname roomname Nothing
-    else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", getArg "e" pkt]
-    where
-        roomname = deformatRoom $ fromJust $ parameter pkt
+respond pkt "part" = do
+    roomname <- deformatRoom $ fromJust $ parameter pkt
+    if okay pkt
+        then do
+            uname <- getsK (getUsername . settings)
+            modifyK (removeRoom roomname)
+            I.sendPart uname roomname Nothing
+        else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", getArg "e" pkt]
 
-respond pkt "property" = case getArg "p" pkt of
+respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname ->
+    case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses $ fromJust $ body pkt
         modifyK (onPrivclasses (setPrivclasses roomname pcs))
@@ -101,10 +103,9 @@ respond pkt "property" = case getArg "p" pkt of
         I.sendWhoisReply us uname (entityDecode rn) allRooms idle signon
     
     q -> klogError $ "Unrecognized property " ++ T.unpack q
-    
-    where roomname = (deformatRoom . fromJust . parameter) pkt
 
-respond spk "recv" = case command pkt of
+respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
+    case command pkt of
     "join" -> do
         let usname = fromJust $ parameter pkt
         (pcs,countUser) <- getsK (privclasses &&& numUsers roomname usname . users)
@@ -168,7 +169,6 @@ respond spk "recv" = case command pkt of
     where
         pkt = fromJust $ subPacket spk
         modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" (fromJust $ body spk))
-        roomname = (deformatRoom . fromJust . parameter) spk
         arg = flip getArg pkt
 
 respond _ "ping" = getK >>= \k -> io $ writeServer k ("pong\n\0" :: T.Text)

@@ -40,10 +40,12 @@ formatRoom b =
             return $ T.append "pchat:" $ T.intercalate ":" $ sort $ map (T.map toLower) [uname, s]
         r -> return $ "chat" `T.append` uncurry T.append r
 
-deformatRoom :: T.Text -> T.Text
+deformatRoom :: T.Text -> KevinIO T.Text
 deformatRoom room = if "chat:" `T.isPrefixOf` room
-    then '#' `T.cons` T.drop 5 room
-    else '&' `T.cons` last (T.splitOn "," room)
+    then return $ '#' `T.cons` T.drop 5 room
+    else do
+        uname <- getsK (getUsername . settings)
+        return $ '&' `T.cons` head (filter (/= uname) $ T.splitOn ":" $ T.drop 6 room)
 
 type Str = T.Text -- just make it shorter
 type Room = Str
