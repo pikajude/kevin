@@ -8,18 +8,18 @@ import qualified Kevin.Damn.Protocol as S
 import System.IO (hSetBuffering, BufferMode(..))
 import Data.Monoid (mempty)
 
-mkKevin ∷ Socket → IO Kevin
+mkKevin :: Socket -> IO Kevin
 mkKevin sock = withSocketsDo $ do
-    (client, _, _) ← accept sock
+    (client, _, _) <- accept sock
     hSetBuffering client NoBuffering
     klogNow Blue "received a client"
-    set ← execStateT (C.getAuthInfo client False) emptySettings
+    set <- execStateT (C.getAuthInfo client False) emptySettings
     klogNow Blue $ "client info: " ++ show set
-    damnSock ← connectTo "chat.deviantart.com" $ PortNumber 3900
+    damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
-    logChan ← newChan
-    damnChan ← newChan
-    ircChan ← newChan
+    logChan <- newChan
+    damnChan <- newChan
+    ircChan <- newChan
     return Kevin { damn = damnSock
                  , irc = client
                  , dChan = damnChan
@@ -34,19 +34,19 @@ mkKevin sock = withSocketsDo $ do
                  , logger = logChan
                  }
 
-mkListener ∷ IO Socket
+mkListener :: IO Socket
 mkListener = listenOn $ PortNumber 6669
 
-kevinServer ∷ IO ()
+kevinServer :: IO ()
 kevinServer = do
-    sock ← mkListener
+    sock <- mkListener
     forever $ do
-        kev ← mkKevin sock
+        kev <- mkKevin sock
         listen kev
 
-listen ∷ Kevin → IO ()
+listen :: Kevin -> IO ()
 listen kevin = do
-    mvar ← newTVarIO kevin
+    mvar <- newTVarIO kevin
     runLogger (logger kevin)
     runPrinter (dChan kevin) (damn kevin)
     runPrinter (iChan kevin) (irc kevin)
