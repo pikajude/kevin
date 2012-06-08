@@ -24,41 +24,41 @@ import qualified Data.Text as T
 import Data.Maybe
 import Control.Applicative ((<$>))
 
-fixColon ∷ T.Text → T.Text
+fixColon :: T.Text -> T.Text
 fixColon str = if " " `T.isInfixOf` str then str else ':' `T.cons` str
 
-hostname ∷ Maybe T.Text
+hostname :: Maybe T.Text
 hostname = Just "chat.deviantart.com"
 
-getHost ∷ T.Text → Maybe T.Text
+getHost :: T.Text -> Maybe T.Text
 getHost u = Just $ T.concat [u, "!", u, "@chat.deviantart.com"]
 
-sendPacket ∷ Packet → KevinIO ()
-sendPacket p = getK >>= \k → io $ writeClient k p
+sendPacket :: Packet -> KevinIO ()
+sendPacket p = getK >>= \k -> io $ writeClient k p
 
-asAction ∷ T.Text → T.Text
+asAction :: T.Text -> T.Text
 asAction x = T.concat ["\1ACTION ", x, "\1"]
 
 type Str = T.Text
 type Room = Str
 type Username = Str
 
-sendJoin ∷ Username → Room → KevinIO ()
-sendPart ∷ Username → Room → Maybe Str → KevinIO ()
-sendSetUserMode ∷ Username → Room → Int → KevinIO ()
-sendChangeUserMode ∷ Username → Room → Int → Int → KevinIO ()
-sendNotice ∷ Str → KevinIO ()
-sendChanMsg, sendChanAction ∷ Username → Room → Str → KevinIO ()
-sendPrivMsg ∷ Username → Str → KevinIO ()
-sendKick ∷ Username → Username → Room → Maybe Str → KevinIO ()
-sendTopic ∷ Username → Room → Username → Str → Str → KevinIO ()
-sendChanMode ∷ Username → Room → KevinIO ()
-sendUserList ∷ Username → [User] → Room → KevinIO ()
-sendWhoList ∷ Username → [User] → Room → KevinIO ()
-sendPong ∷ T.Text → KevinIO ()
-sendNoticeClone ∷ Username → Int → Room → KevinIO ()
-sendNoticeUnclone ∷ Username → Int → Room → KevinIO ()
-sendWhoisReply ∷ Username → Username → Username → [Room] → Int → Int → KevinIO ()
+sendJoin :: Username -> Room -> KevinIO ()
+sendPart :: Username -> Room -> Maybe Str -> KevinIO ()
+sendSetUserMode :: Username -> Room -> Int -> KevinIO ()
+sendChangeUserMode :: Username -> Room -> Int -> Int -> KevinIO ()
+sendNotice :: Str -> KevinIO ()
+sendChanMsg, sendChanAction :: Username -> Room -> Str -> KevinIO ()
+sendPrivMsg :: Username -> Str -> KevinIO ()
+sendKick :: Username -> Username -> Room -> Maybe Str -> KevinIO ()
+sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
+sendChanMode :: Username -> Room -> KevinIO ()
+sendUserList :: Username -> [User] -> Room -> KevinIO ()
+sendWhoList :: Username -> [User] -> Room -> KevinIO ()
+sendPong :: T.Text -> KevinIO ()
+sendNoticeClone :: Username -> Int -> Room -> KevinIO ()
+sendNoticeUnclone :: Username -> Int -> Room -> KevinIO ()
+sendWhoisReply :: Username -> Username -> Username -> [Room] -> Int -> Int -> KevinIO ()
 
 sendJoin us rm = sendPacket
     Packet { prefix = getHost us
@@ -95,13 +95,13 @@ sendNotice str = sendPacket
            , params = ["AUTH", fixColon str]
            }
 
-sendChanMsg sender room msg = mapM_ (\x → sendPacket
+sendChanMsg sender room msg = mapM_ (\x -> sendPacket
     Packet { prefix = getHost sender
            , command = "PRIVMSG"
            , params = [room, fixColon x]
            }) $ T.splitOn "\n" msg
 
-sendChanAction sender room msg = mapM_ (\x → sendPacket
+sendChanAction sender room msg = mapM_ (\x -> sendPacket
     Packet { prefix = getHost sender
            , command = "PRIVMSG"
            , params = [room, asAction x]
@@ -135,7 +135,7 @@ sendChanMode us rm = sendPacket
            , params = [us, rm, "767529000"]
            }
 
-sendUserList us uss rm = mapM_ (\nms → sendPacket
+sendUserList us uss rm = mapM_ (\nms -> sendPacket
     Packet { prefix = hostname
            , command = "353"
            , params = [us, "=", rm, T.intercalate " " nms]
@@ -145,15 +145,15 @@ sendUserList us uss rm = mapM_ (\nms → sendPacket
            , params = [us, rm, "End of NAMES list."]
            }
     where
-        names = map (\u → T.concat [levelToSym $ privclassLevel u, username u]) uss
+        names = map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss
         chunkedNames = reverse $ map reverse $ subchunk' 432 names [[]]
-        subchunk' n = fix (\f x y → let hy = head y; hx = head x; ty = tail y; tx = tail x in if null x
+        subchunk' n = fix (\f x y -> let hy = head y; hx = head x; ty = tail y; tx = tail x in if null x
             then y
             else if sum (map T.length hy) + T.length hx <= n
                 then f tx ((hx:hy):ty)
                 else f tx ([hx]:y))
 
-sendWhoList us uss rm = mapM_ (sendPacket . (\u →
+sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
     Packet { prefix = hostname
            , command = "352"
            , params = [us, rm, username u, "chat.deviantart.com", "chat.deviantart.com", username u, "Hr" `T.append` symbol u, "0 " `T.append` realname u]
@@ -210,17 +210,17 @@ sendWhoisReply me us rn rooms idle signon = sendPacket
            , params = [me, us, "End of /WHOIS list."]
            }
 
-levelToSym ∷ Int → T.Text
+levelToSym :: Int -> T.Text
 levelToSym x | x > 0  && x <= 35 = ""
              | x > 35 && x <= 70 = "+"
              | x > 70 && x <  99 = "@"
              | x == 99           = "~"
              | otherwise         = ""
 
-levelToMode ∷ Int → T.Text
+levelToMode :: Int -> T.Text
 levelToMode x = case levelToSym x of
-   "" → ""
-   "+" → "v"
-   "@" → "o"
-   "~" → "q"
-   _ → error "levelToSym, what are you doing"
+   "" -> ""
+   "+" -> "v"
+   "@" -> "o"
+   "~" -> "q"
+   _ -> error "levelToSym, what are you doing"
