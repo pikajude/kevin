@@ -93,7 +93,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
     "info" -> do
         us <- getsK (getUsername . settings)
         curtime <- io $ floor <$> getPOSIXTime
-        let fixedPacket = parsePacket $ T.init $ T.replace "\n\nusericon" "\nusericon" $ asStringS pkt
+        let fixedPacket = parsePacket $ T.init $ T.replace "\n\nusericon" "\nusericon" $ readable pkt
             uname = T.drop 6 $ fromJust $ parameter pkt
             rn = getArg "realname" fixedPacket
             conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) $ filter (not . T.null) $ T.splitOn "\n\n" $ fromJust $ body x)) $ fromJust $ (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") <$> body fixedPacket
@@ -160,7 +160,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         "rename" -> I.sendNotice $ T.concat ["Privclass ", arg "prev", " renamed to ", arg "name", " by ", arg "by"]
         "move"   -> I.sendNotice $ T.concat [arg "n", " users in privclass ", arg "prev", " moved to ", arg "name", " by ", arg "by"]
         "remove" -> I.sendNotice $ T.concat ["Privclass", arg "name", " removed by ", arg "by"]
-        "show"   -> I.sendNotice $ fromJust $ body pkt
+        "show"   -> mapM_ I.sendNotice $ T.splitOn "\n" $ fromJust $ body pkt
         "privclass" -> I.sendNotice $ "Admin error: " `T.append` arg "e"
         q -> klogError $ "Unknown admin packet type " ++ show q
     
@@ -170,6 +170,8 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         pkt = fromJust $ subPacket spk
         modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" (fromJust $ body spk))
         arg = flip getArg pkt
+
+respond pkt "send" = I.sendNotice $ T.concat ["Send error: ", getArg "e" pkt]
 
 respond _ "ping" = getK >>= \k -> io $ writeServer k ("pong\n\0" :: T.Text)
 

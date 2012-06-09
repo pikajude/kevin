@@ -1,9 +1,10 @@
 module Kevin.IRC.Packet (
     Packet(..),
-    parsePacket
+    parsePacket,
+    readable
 ) where
 
-import Kevin.Base (KevinException(..), KClientPacket(..))
+import Kevin.Base (KevinException(..))
 import Prelude hiding (takeWhile)
 import qualified Data.Text as T
 import Data.Char
@@ -71,12 +72,12 @@ packetParser = do
 
 parsePacket :: T.Text -> Packet
 parsePacket str = case parseOnly packetParser str of
-   Left _ -> throw ParseFailure
-   Right p -> p
+    Left _ -> throw ParseFailure
+    Right p -> p
 
 showParams :: [T.Text] -> T.Text
 showParams = T.unwords . map (\str -> if " " `T.isInfixOf` str then T.cons ':' str else str)
 
-instance KClientPacket Packet where
-    asStringC (Packet (Just str) cmd pms) = flip T.append "\r\n" $ T.unwords [T.cons ':' str, cmd, showParams pms]
-    asStringC (Packet Nothing c p) = flip T.append "\r\n" $ T.unwords [c, showParams p]
+readable :: Packet -> T.Text
+readable (Packet (Just str) cmd pms) = flip T.append "\r\n" $ T.unwords [T.cons ':' str, cmd, showParams pms]
+readable (Packet Nothing c p) = flip T.append "\r\n" $ T.unwords [c, showParams p]

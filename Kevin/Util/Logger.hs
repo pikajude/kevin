@@ -5,11 +5,13 @@ module Kevin.Util.Logger (
     klogError,
     klogWarn,
     Color(..),
-    runLogger
+    runLogger,
+	printf
 ) where
 
 import Kevin.Types
 import Data.Char (isSpace)
+import qualified Data.Text as T
 import Control.Concurrent
 import Control.Monad.State
 
@@ -26,6 +28,14 @@ colorAsNum Gray = 37
 
 runLogger :: Chan String -> IO ()
 runLogger ch = void $ forkIO $ forever $ readChan ch >>= putStrLn
+
+interleave :: [a] -> [a] -> [a]
+interleave xs [] = xs
+interleave [] ys = ys
+interleave (x:xs) (y:ys) = x:y:interleave xs ys
+
+printf :: T.Text -> [T.Text] -> T.Text
+printf str reps = T.concat $ interleave (T.splitOn "%s" str) reps
 
 render :: Color -> String -> String
 render col str = "\027[" ++ show (colorAsNum col) ++ "m" ++ rtrimmed ++ "\027[0m"

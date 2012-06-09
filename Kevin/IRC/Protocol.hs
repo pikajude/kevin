@@ -74,6 +74,8 @@ respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if leng
 
 respond _ "QUIT" = klogError "client quit" >> undefined
 
+respond pkt "ADMIN" = let (p:ps) = params pkt in D.sendAdmin p $ T.intercalate " " ps
+
 respond _ str = klogError $ T.unpack str
 
 
@@ -88,14 +90,14 @@ errHandlers = [Handler (\(_ :: KevinException) -> klogError "Bad communication f
 
 -- * Authentication-getting function
 notice :: Handle -> T.Text -> IO ()
-notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h asStr
+notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h (asStr `T.append` "\r\n")
     where
-        asStr = asStringC $ Packet Nothing "NOTICE" ["AUTH", str]
+        asStr = printf "NOTICE AUTH :%s" [str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle = fix (\f authRetry -> do
     pkt <- io $ parsePacket <$> T.hGetLine handle
-    io $ klogNow Yellow $ "client <- " ++ T.unpack (asStringC pkt)
+    io $ klogNow Yellow $ "client <- " ++ T.unpack (readable pkt)
     case command pkt of
         "PASS" -> do
             modify (setPassword $ head $ params pkt)
@@ -113,47 +115,19 @@ getAuthInfo handle = fix (\f authRetry -> do
 welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- gets getUsername
-    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ T.unpack (asStringC x)) >> T.hPutStr handle (asStringC x)) [
-        Packet { prefix = hostname
-               , command = "001"
-               , params = [nick, T.concat ["Welcome to dAmnServer ", nick, "!", nick, "@chat.deviantart.com"]]
-               },
-        Packet { prefix = hostname
-               , command = "002"
-               , params = [nick, "Your host is chat.deviantart.com, running dAmnServer 0.3"]
-               },
-        Packet { prefix = hostname
-               , command = "003"
-               , params = [nick, "This server was created Thu Apr 28 1994 at 05:30:00 EDT"]
-               },
-        Packet { prefix = hostname
-               , command = "004"
-               , params = [nick, "chat.deviantart.com", "dAmnServer0.3", "qov", "i"]
-               },
-        Packet { prefix = hostname
-               , command = "005"
-               , params = [nick, "PREFIX=(qov)~@+"]
-               },
-        Packet { prefix = hostname
-               , command = "375"
-               , params = [nick, "- chat.deviantart.com Message of the day -"]
-               },
-        Packet { prefix = hostname
-               , command = "372"
-               , params = [nick, "- deviantART chat on IRC brought to you by kevin" `T.append` VERSION `T.append` ", created"]
-               },
-        Packet { prefix = hostname
-               , command = "375"
-               , params = [nick, "- and maintained by Joel Taylor <http://otter.github.com>"]
-               },
-        Packet { prefix = hostname
-               , command = "376"
-               , params = [nick, "End of MOTD command"]
-               }
-        ]
+    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ T.unpack x) >> T.hPutStr handle (x `T.append` "\r\n")) [
+        printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com" [hostname, nick, nick, nick],
+        printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" [hostname, nick],
+        printf ":%s 003 %s :This server was created Thu Apr 28 1994 at 05:30:00 EDT" [hostname, nick],
+        printf ":%s 004 %s chat.deviantart.com dAmnServer0.3 qov i" [hostname, nick],
+        printf ":%s 005 %s PREFIX=(qov)~@+" [hostname, nick],
+        printf ":%s 375 %s :- chat.deviantart.com Message of the day -" [hostname, nick],
+        printf ":%s 372 %s :- deviantART chat on IRC brought to by kevin %s, created" [hostname, nick, VERSION],
+        printf ":%s 372 %s :- and maintained by Joel Taylor <http://otter.github.com>" [hostname, nick],
+        printf ":%s 376 %s :End of MOTD command" [hostname, nick]]
     checkToken handle
     where
-        hostname = Just "chat.deviantart.com"
+        hostname = "chat.deviantart.com"
 
 checkToken :: Handle -> KevinState ()
 checkToken handle = do
@@ -168,5 +142,3 @@ checkToken handle = do
         Nothing -> do
             io $ notice handle "Bad password, try again. (/quote pass yourpassword)"
             getAuthInfo handle True
-
--- * Send *to* client

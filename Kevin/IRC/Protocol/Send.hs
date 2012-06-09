@@ -19,25 +19,19 @@ module Kevin.IRC.Protocol.Send (
 ) where
     
 import Kevin.Base
-import Kevin.IRC.Packet
 import qualified Data.Text as T
-import Data.Maybe
-import Control.Applicative ((<$>))
 
-fixColon :: T.Text -> T.Text
-fixColon str = if " " `T.isInfixOf` str then str else ':' `T.cons` str
+hostname :: T.Text
+hostname = ":chat.deviantart.com"
 
-hostname :: Maybe T.Text
-hostname = Just "chat.deviantart.com"
+getHost :: T.Text -> T.Text
+getHost u = T.concat [":", u, "!", u, "@chat.deviantart.com"]
 
-getHost :: T.Text -> Maybe T.Text
-getHost u = Just $ T.concat [u, "!", u, "@chat.deviantart.com"]
+sendPacket :: T.Text -> KevinIO ()
+sendPacket p = getK >>= \k -> io $ writeClient k (T.append p "\r\n")
 
-sendPacket :: Packet -> KevinIO ()
-sendPacket p = getK >>= \k -> io $ writeClient k p
-
-asAction :: T.Text -> T.Text
-asAction x = T.concat ["\1ACTION ", x, "\1"]
+maybeBody :: Maybe T.Text -> T.Text
+maybeBody = maybe "" (T.append " :")
 
 type Str = T.Text
 type Room = Str
@@ -60,90 +54,50 @@ sendNoticeClone :: Username -> Int -> Room -> KevinIO ()
 sendNoticeUnclone :: Username -> Int -> Room -> KevinIO ()
 sendWhoisReply :: Username -> Username -> Username -> [Room] -> Int -> Int -> KevinIO ()
 
-sendJoin us rm = sendPacket
-    Packet { prefix = getHost us
-           , command = "JOIN"
-           , params = [rm]
-           }
+sendJoin us rm =
+    sendPacket $ printf "%s JOIN :%s" [getHost us, rm]
 
-sendPart us rm msg = sendPacket
-    Packet { prefix = getHost us
-           , command = "PART"
-           , params = rm:(fixColon <$> maybeToList msg)
-           }
+sendPart us rm msg =
+    sendPacket $ printf "%s PART %s%s" [getHost us, rm, maybeBody msg]
 
-sendSetUserMode us rm m = unless (T.null mode) $ sendPacket
-    Packet { prefix = hostname
-           , command = "MODE"
-           , params = [rm, '+' `T.cons` mode, us]
-           }
-    where
-        mode = levelToMode m
+sendSetUserMode us rm m = unless (T.null mode) $
+    sendPacket $ printf "%s MODE %s +%s %s" [hostname, rm, mode, us]
+    where mode = levelToMode m
 
-sendChangeUserMode us rm old new = unless (oldMode == newMode) $ sendPacket
-    Packet { prefix = hostname
-           , command = "MODE"
-           , params = [rm, T.concat ["-", oldMode, "+", newMode], us]
-           }
+sendChangeUserMode us rm old new = unless (oldMode == newMode) $
+    sendPacket $ printf "%s MODE %s -%s+%s %s" [hostname, rm, oldMode, newMode, us]
     where
         oldMode = levelToMode old
         newMode = levelToMode new
 
-sendNotice str = sendPacket
-    Packet { prefix = Nothing
-           , command = "NOTICE"
-           , params = ["AUTH", fixColon str]
-           }
+sendNotice =
+    sendPacket . printf "NOTICE AUTH :%s" . return
 
-sendChanMsg sender room msg = mapM_ (\x -> sendPacket
-    Packet { prefix = getHost sender
-           , command = "PRIVMSG"
-           , params = [room, fixColon x]
-           }) $ T.splitOn "\n" msg
+sendChanMsg sender room msg = mapM_ (\x ->
+    sendPacket $ printf "%s PRIVMSG %s :%s" [getHost sender, room, x]
+    ) $ T.splitOn "\n" msg
 
-sendChanAction sender room msg = mapM_ (\x -> sendPacket
-    Packet { prefix = getHost sender
-           , command = "PRIVMSG"
-           , params = [room, asAction x]
-           }) $ T.splitOn "\n" msg
+sendChanAction sender room msg = mapM_ (\x ->
+    sendPacket $ printf "%s PRIVMSG %s :\1ACTION %s\1" [getHost sender, room, x]
+    ) $ T.splitOn "\n" msg
 
 sendPrivMsg = undefined
 
-sendKick kickee kicker room msg = sendPacket
-    Packet { prefix = getHost kicker
-           , command = "KICK"
-           , params = [room, kickee] ++ maybeToList (fixColon <$> msg)
-           }
+sendKick kickee kicker room msg =
+    sendPacket $ printf "%s KICK %s %s%s" [getHost kicker, room, kickee, maybeBody msg]
 
-sendTopic us rm maker top startdate = sendPacket
-    Packet { prefix = hostname
-           , command = "332"
-           , params = [us, rm, fixColon top]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "333"
-           , params = [us, rm, maker, startdate]
-           }
+sendTopic us rm maker top startdate = do
+    sendPacket $ printf "%s 332 %s %s :%s" [hostname, us, rm, top]
+    sendPacket $ printf "%s 333 %s %s %s %s" [hostname, us, rm, maker, startdate]
 
-sendChanMode us rm = sendPacket
-    Packet { prefix = hostname
-           , command = "324"
-           , params = [us, rm, "+t"]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "329"
-           , params = [us, rm, "767529000"]
-           }
+sendChanMode us rm = do
+    sendPacket $ printf "%s 324 %s %s +t" [hostname, us, rm]
+    sendPacket $ printf "%s 329 %s %s 767529000" [hostname, us, rm]
 
-sendUserList us uss rm = mapM_ (\nms -> sendPacket
-    Packet { prefix = hostname
-           , command = "353"
-           , params = [us, "=", rm, T.intercalate " " nms]
-           }) chunkedNames >> sendPacket
-    Packet { prefix = hostname
-           , command = "366"
-           , params = [us, rm, "End of NAMES list."]
-           }
+sendUserList us uss rm = do
+    mapM_ (\nms -> 
+        sendPacket $ printf "%s 353 %s = %s :%s" [hostname, us, rm, T.unwords nms]) chunkedNames
+    sendPacket $ printf "%s 366 %s %s :End of NAMES list." [hostname, us, rm]
     where
         names = map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss
         chunkedNames = reverse $ map reverse $ subchunk' 432 names [[]]
@@ -153,62 +107,31 @@ sendUserList us uss rm = mapM_ (\nms -> sendPacket
                 then f tx ((hx:hy):ty)
                 else f tx ([hx]:y))
 
-sendWhoList us uss rm = mapM_ (sendPacket . (\u ->
-    Packet { prefix = hostname
-           , command = "352"
-           , params = [us, rm, username u, "chat.deviantart.com", "chat.deviantart.com", username u, "Hr" `T.append` symbol u, "0 " `T.append` realname u]
-           })) uss >> sendPacket
-    Packet { prefix = hostname
-           , command = "315"
-           , params = [us, rm, "End of WHO list."]
-           }
+sendWhoList us uss rm = do
+    mapM_ (sendPacket . (\u ->
+        printf "%s 352 %s %s %s chat.deviantart.com chat.deviantart.com %s Hr%s :0 %s" [hostname, us, rm, username u, username u, symbol u, realname u]
+        )) uss
+    sendPacket $ printf "%s 315 %s %s :End of WHO list." [hostname, us, rm]
 
-sendPong p = sendPacket
-    Packet { prefix = hostname
-           , command = "PONG"
-           , params = ["chat.deviantart.com", fixColon p]
-           }
+sendPong p =
+    sendPacket $ printf "%s PONG chat.deviantart.com :%s" [hostname, p]
 
-sendNoticeClone uname i rm = sendPacket
-    Packet { prefix = hostname
-           , command = "NOTICE"
-           , params = [rm, T.concat [uname, " has joined again (now joined ", T.pack $ show i, " times)"]]
-           }
+sendNoticeClone uname i rm =
+    sendPacket $ printf "%s NOTICE %s :%s has joined again (now joined %s times)" [hostname, rm, uname, T.pack $ show i]
 
-sendNoticeUnclone uname i rm = sendPacket
-    Packet { prefix = hostname
-           , command = "NOTICE"
-           , params = [rm, T.concat [uname, " has parted (now joined ", times, ")"]]
-           }
+sendNoticeUnclone uname i rm =
+    sendPacket $ printf "%s NOTICE %s :%s has parted (now joined %s)" [hostname, rm, uname, times]
     where
         times | i == 1    = "once"
               | otherwise = T.pack (show i) `T.append` " times"
 
-sendWhoisReply me us rn rooms idle signon = sendPacket
-    Packet { prefix = hostname
-           , command = "311"
-           , params = [me, us, us, "chat.deviantart.com", "*", fixColon rn]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "307"
-           , params = [me, us, "is a registered nick"]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "319"
-           , params = [me, us, fixColon $ T.intercalate " " $ map (T.cons '#') rooms]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "312"
-           , params = [me, us, "chat.deviantart.com", ":dAmn"]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "317"
-           , params = [me, us, T.pack $ show idle, T.pack $ show signon, "seconds idle, signon time"]
-           } >> sendPacket
-    Packet { prefix = hostname
-           , command = "318"
-           , params = [me, us, "End of /WHOIS list."]
-           }
+sendWhoisReply me us rn rooms idle signon = do
+    sendPacket $ printf "%s 311 %s %s %s chat.deviantart.com * :%s" [hostname, me, us, us, rn]
+    sendPacket $ printf "%s 307 %s %s :is a registered nick" [hostname, me, us]
+    sendPacket $ printf "%s 319 %s %s :%s" [hostname, me, us, T.intercalate " " $ map (T.cons '#') rooms]
+    sendPacket $ printf "%s 312 %s %s chat.deviantart.com :dAmn" [hostname, me, us]
+    sendPacket $ printf "%s 317 %s %s %s %s :seconds idle, signon time" [hostname, me, us, T.pack $ show idle, T.pack $ show signon]
+    sendPacket $ printf "%s 318 %s %s :End of /WHOIS list." [hostname, me, us]
 
 levelToSym :: Int -> T.Text
 levelToSym x | x > 0  && x <= 35 = ""
