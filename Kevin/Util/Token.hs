@@ -41,8 +41,8 @@ getToken uname pass = do
     sendData ctx . LB.pack $ printf "POST /users/login HTTP/1.1\r\n%s\r\nContent-Length: %d\r\n\r\n%s" (concatHeaders $ ("Host", "www.deviantart.com"):headers) (length payload) payload
     bs <- recvData ctx
     guard . not $ "wrong-password" `B.isInfixOf` bs
-    let cookie = B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines $ bs
+    let cookie = (B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines) bs
         s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n" (concatHeaders [("Host", "chat.deviantart.com")]) (B.unpack cookie)
     sendData ctx $ LB.pack s
     bq <- recvUntil ctx "</html>\n\r\n0\r\n\r\n"
-    return . Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd $ B.breakSubstring "dAmn_Login" bq
+    return $ (Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd) $ B.breakSubstring "dAmn_Login" bq
