@@ -7,7 +7,7 @@ module Kevin.Damn.Packet (
     okay,
     getArg,
     splitOn,
-	readable
+    readable
 ) where
 
 import Kevin.Base (KevinException(..), Privclass)

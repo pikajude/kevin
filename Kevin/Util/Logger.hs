@@ -6,7 +6,7 @@ module Kevin.Util.Logger (
     klogWarn,
     Color(..),
     runLogger,
-	printf
+    printf
 ) where
 
 import Kevin.Types
