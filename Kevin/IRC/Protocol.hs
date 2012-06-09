@@ -54,7 +54,7 @@ respond pkt "MODE" = if length (params pkt) > 1
     then do
         let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
         case mode of
-            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "*" $ unmask $ last $ params pkt)
+            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "random unparseable garbage" $ unmask $ last $ params pkt)
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
             _ -> sendNotice $ "Unsupported mode " `T.append` mode
     else do
@@ -83,9 +83,8 @@ unmask y = case T.split (`elem` "@!") y of
     xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [
-    Handler (\(_ :: KevinException) -> klogError "Bad communication from client"),
-    Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
+errHandlers = [Handler (\(_ :: KevinException) -> klogError "Bad communication from client"),
+               Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
 notice :: Handle -> T.Text -> IO ()
