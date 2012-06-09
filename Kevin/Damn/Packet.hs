@@ -6,10 +6,11 @@ module Kevin.Damn.Packet (
     fixLoginPacket,
     okay,
     getArg,
-    splitOn
+    splitOn,
+	readable
 ) where
 
-import Kevin.Base (KevinException(..), KServerPacket(..), Privclass)
+import Kevin.Base (KevinException(..), Privclass)
 import Control.Exception (throw)
 import qualified Data.Text as T
 import Data.Attoparsec.Text
@@ -78,9 +79,9 @@ parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . (!! 0)) . T.splitOn
 splitOn :: T.Text -> T.Text -> [T.Text]
 splitOn delim = fix (\rec s -> let (f,l) = T.breakOn delim s in if T.null l then [f] else f:rec (T.drop (T.length delim) l))
 
-instance KServerPacket Packet where
-    asStringS (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `T.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `T.append`) bod +++ "\n\0"
-        where
-            (+++) = T.append
-            formattedArgs [] = ""
-            formattedArgs q = T.append "\n" $ T.intercalate "\n" $ map (uncurry (\x y -> x +++ "=" +++ y)) q
+readable :: Packet -> T.Text
+readable (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `T.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `T.append`) bod +++ "\n\0"
+    where
+        (+++) = T.append
+        formattedArgs [] = ""
+        formattedArgs q = T.append "\n" $ T.intercalate "\n" $ map (uncurry (\x y -> x +++ "=" +++ y)) q

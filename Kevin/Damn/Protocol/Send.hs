@@ -23,13 +23,15 @@ module Kevin.Damn.Protocol.Send (
 ) where
 
 import Kevin.Base
-import Kevin.Damn.Packet
 import qualified Data.Text as T
 import Data.List (sort)
 import Data.Char (toLower)
 
-sendPacket :: Packet -> KevinIO ()
-sendPacket p = getK >>= \k -> io $ writeServer k p
+maybeBody :: Maybe T.Text -> T.Text
+maybeBody = maybe "" (T.append "\n\n")
+
+sendPacket :: T.Text -> KevinIO ()
+sendPacket p = getK >>= \k -> io $ writeServer k $ p `T.snoc` '\0'
 
 formatRoom :: T.Text -> KevinIO T.Text
 formatRoom b = 
@@ -66,103 +68,56 @@ sendSet :: Room -> Str -> Str -> KevinIO ()
 sendAdmin :: Room -> Str -> KevinIO ()
 sendKill :: Username -> Str -> KevinIO ()
 
-sendHandshake = sendPacket
-    Packet { command = "dAmnClient"
-           , parameter = Just "0.3"
-           , args = [("agent","kevin " `T.append` VERSION)]
-           , body = Nothing
-           }
+sendHandshake = sendPacket $ printf "dAmnClient 0.3\nagent=kevin%s\n" [VERSION]
 
-sendLogin u token = sendPacket
-    Packet { command = "login"
-           , parameter = Just u
-           , args = [("pk",token)]
-           , body = Nothing
-           }
+sendLogin u token = sendPacket $ printf "login %s\npk=%s\n" [u, token]
 
 sendJoin room = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "join"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Nothing
-                      }
+    sendPacket $ printf "join %s\n" [roomname]
 
 sendPart room = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "part"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Nothing
-                      }
+    sendPacket $ printf "part %s\n" [roomname]
 
 sendMsg room msg = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "send"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Just $ T.concat ["msg main\n\n", msg]
-                      }
+    sendPacket $ printf "send %s\n\nmsg main\n\n%s" [roomname, msg]
 
 sendAction room msg = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "send"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Just $ T.concat ["action main\n\n", msg]
-                      }
+    sendPacket $ printf "send %s\n\naction main\n\n%s" [roomname, msg]
 
 sendNpMsg = undefined
 
 sendPromote room us pc = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "send"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Just $ T.concat ["promote ", us, maybe "" (T.append "\n\n") pc]
-                      }
+    sendPacket $ printf "send %s\n\npromote %s%s" [roomname, us, maybeBody pc]
 
 sendDemote room us pc = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "send"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Just $ T.concat ["demote ", us, maybe "" (T.append "\n\n") pc]
-                      }
+    sendPacket $ printf "send %s\n\ndemote %s%s" [roomname, us, maybeBody pc]
 
 sendBan room us = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "send"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Just $ T.concat ["ban ", us, "\n"]
-                      }
+    sendPacket $ printf "send %s\n\nban %s\n\n" [roomname, us]
 
 sendUnban room us = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "send"
-                      , parameter = Just roomname
-                      , args = []
-                      , body = Just $ T.concat ["unban ", us, "\n"]
-                      }
+    sendPacket $ printf "send %s\n\nunban %s\n\n" [roomname, us]
 
 sendKick room us reason = do
     roomname <- formatRoom room
-    sendPacket Packet { command = "kick"
-                      , parameter = Just roomname
-                      , args = [("u",us)]
-                      , body = reason
-                      }
+    sendPacket $ printf "kick %s\nu=%s%s\n" [roomname, us, maybeBody reason]
 
 sendGetProperty = undefined
 
-sendWhois us = sendPacket
-    Packet { command = "get"
-           , parameter = Just $ "login:" `T.append` us
-           , args = [("p","info")]
-           , body = Nothing
-           }
+sendWhois us = sendPacket $ printf "get login:%s\np=info\n" [us]
 
 sendSet = undefined
-sendAdmin = undefined
+
+sendAdmin room cmd = do
+    roomname <- formatRoom room
+    sendPacket $ printf "send %s\n\nadmin\n\n%s" [roomname, cmd]
+
 sendKill = undefined

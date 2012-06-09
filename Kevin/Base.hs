@@ -2,8 +2,6 @@ module Kevin.Base (
     Kevin(..),
     KevinIO,
     KevinException(..),
-    KServerPacket(..),
-    KClientPacket(..),
     KevinServer(..),
     User(..),
     Privclass,
@@ -49,7 +47,9 @@ module Kevin.Base (
     getsK,
     modifyK,
     
-    if'
+    if',
+	
+	printf
 ) where
 
 import Kevin.Util.Logger
@@ -85,16 +85,10 @@ runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h . T.enco
 io :: MonadIO m => IO a -> m a
 io = liftIO
 
-class KServerPacket a where
-    asStringS :: a -> T.Text
-
-class KClientPacket a where
-    asStringC :: a -> T.Text
-
 class KevinServer a where
     readClient, readServer :: a -> IO T.Text
-    writeServer :: (KServerPacket p) => a -> p -> IO ()
-    writeClient :: (KClientPacket p) => a -> p -> IO ()
+    writeServer :: a -> T.Text -> IO ()
+    writeClient :: a -> T.Text -> IO ()
     closeClient, closeServer :: a -> IO ()
 
 data KevinException = ParseFailure
@@ -120,23 +114,15 @@ instance KevinServer Kevin where
         klog_ (logger k) Cyan $ "server <- " ++ padLines 10 line
         return line
     
-    writeClient k str = do
-        let pkt = asStringC str
+    writeClient k pkt = do
         klog_ (logger k) Blue $ "client -> " ++ padLines 10 pkt
         writeChan (iChan k) pkt
-    writeServer k str = do
-        let pkt = asStringS str
+    writeServer k pkt = do
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
         writeChan (dChan k) pkt
     
     closeClient = hClose . irc
     closeServer = hClose . damn
-
-instance KServerPacket T.Text where
-    asStringS = id
-
-instance KClientPacket T.Text where
-    asStringC = id
 
 -- Kevin modifiers
 logIn :: Kevin -> Kevin
