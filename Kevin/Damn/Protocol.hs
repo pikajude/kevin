@@ -81,10 +81,11 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
         (pcs,(uname,j)) <- getsK (privclasses &&& getUsername . settings &&& joining)
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
             pc = privclass $ head $ filter (\x -> username x == uname) members
+            n = nub members
         modifyK (onUsers (setUsers roomname members))
         when (roomname `elem` j) $ do
-            I.sendUserList uname (nub members) roomname
-            I.sendWhoList uname (nub members) roomname
+            I.sendUserList uname n roomname
+            I.sendWhoList uname n roomname
             I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
             modifyK (onJoining (delete roomname))
         
