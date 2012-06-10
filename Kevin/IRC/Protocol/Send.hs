@@ -6,7 +6,6 @@ module Kevin.IRC.Protocol.Send (
     sendNotice,
     sendChanMsg,
     sendChanAction,
-    sendPrivMsg,
     sendKick,
     sendTopic,
     sendChanMode,
@@ -43,7 +42,6 @@ sendSetUserMode :: Username -> Room -> Int -> KevinIO ()
 sendChangeUserMode :: Username -> Room -> Int -> Int -> KevinIO ()
 sendNotice :: Str -> KevinIO ()
 sendChanMsg, sendChanAction :: Username -> Room -> Str -> KevinIO ()
-sendPrivMsg :: Username -> Str -> KevinIO ()
 sendKick :: Username -> Username -> Room -> Maybe Str -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
 sendChanMode :: Username -> Room -> KevinIO ()
@@ -80,8 +78,6 @@ sendChanMsg sender room msg = mapM_ (\x ->
 sendChanAction sender room msg = mapM_ (\x ->
     sendPacket $ printf "%s PRIVMSG %s :\1ACTION %s\1" [getHost sender, room, x]
     ) $ T.splitOn "\n" msg
-
-sendPrivMsg = undefined
 
 sendKick kickee kicker room msg =
     sendPacket $ printf "%s KICK %s %s%s" [getHost kicker, room, kickee, maybeBody msg]
