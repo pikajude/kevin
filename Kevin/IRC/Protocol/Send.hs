@@ -4,6 +4,7 @@ module Kevin.IRC.Protocol.Send (
     sendSetUserMode,
     sendChangeUserMode,
     sendNotice,
+	sendRoomNotice,
     sendChanMsg,
     sendChanAction,
     sendKick,
@@ -41,6 +42,7 @@ sendPart :: Username -> Room -> Maybe Str -> KevinIO ()
 sendSetUserMode :: Username -> Room -> Int -> KevinIO ()
 sendChangeUserMode :: Username -> Room -> Int -> Int -> KevinIO ()
 sendNotice :: Str -> KevinIO ()
+sendRoomNotice :: Room -> Str -> KevinIO ()
 sendChanMsg, sendChanAction :: Username -> Room -> Str -> KevinIO ()
 sendKick :: Username -> Username -> Room -> Maybe Str -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
@@ -70,6 +72,9 @@ sendChangeUserMode us rm old new = unless (oldMode == newMode) $
 
 sendNotice =
     sendPacket . printf "NOTICE AUTH :%s" . return
+
+sendRoomNotice room n =
+	sendPacket $ printf "%s NOTICE %s :%s" [hostname, room, n]
 
 sendChanMsg sender room msg = mapM_ (\x ->
     sendPacket $ printf "%s PRIVMSG %s :%s" [getHost sender, room, x]

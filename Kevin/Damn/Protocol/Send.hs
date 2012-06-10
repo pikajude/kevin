@@ -15,7 +15,7 @@ module Kevin.Damn.Protocol.Send (
     sendBan,
     sendUnban,
     sendKick,
-    sendGetProperty,
+    sendGet,
     sendWhois,
     sendSet,
     sendAdmin,
@@ -62,7 +62,7 @@ sendMsg, sendAction, sendNpMsg :: Room -> Str -> KevinIO ()
 sendPromote, sendDemote :: Room -> Username -> Maybe Pc -> KevinIO ()
 sendBan, sendUnban :: Room -> Username -> KevinIO ()
 sendKick :: Room -> Username -> Maybe Str -> KevinIO ()
-sendGetProperty :: Room -> Str -> KevinIO ()
+sendGet :: Room -> Str -> KevinIO ()
 sendWhois :: Username -> KevinIO ()
 sendSet :: Room -> Str -> Str -> KevinIO ()
 sendAdmin :: Room -> Str -> KevinIO ()
@@ -110,11 +110,17 @@ sendKick room us reason = do
     roomname <- formatRoom room
     sendPacket $ printf "kick %s\nu=%s%s\n" [roomname, us, maybeBody reason]
 
-sendGetProperty = undefined
+sendGet room prop = do
+	guard $ prop `elem` ["title", "topic", "privclasses", "members"]
+	roomname <- formatRoom room
+	sendPacket $ printf "get %s\np=%s\n" [roomname, prop]
 
 sendWhois us = sendPacket $ printf "get login:%s\np=info\n" [us]
 
-sendSet = undefined
+sendSet room prop val = do
+	guard (prop == "topic" || prop == "title")
+	roomname <- formatRoom room
+	sendPacket $ printf "set %s\np=%s\n\n%s\n" [roomname, prop, val]
 
 sendAdmin room cmd = do
     roomname <- formatRoom room

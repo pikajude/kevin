@@ -11,7 +11,7 @@ import Kevin.Util.Entity
 import Kevin.Util.Tablump
 import Kevin.Damn.Packet
 import qualified Data.Text as T
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.List (nub, delete, sortBy)
 import Data.Ord (comparing)
 import Kevin.Damn.Protocol.Send
@@ -77,7 +77,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
         uname <- getsK (getUsername . settings)
         I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " $ tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
         
-    "title" -> modifyK (onTitles (setTitle roomname (fromJust (body pkt))))
+    "title" -> modifyK (onTitles (setTitle roomname (T.replace "\n" " - " $ tablumpDecode $ fromJust $ body pkt)))
     
     "members" -> do
         (pcs,(uname,j)) <- getsK (privclasses &&& getUsername . settings &&& joining)
@@ -141,27 +141,27 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         (pcs,us) <- getsK (privclasses &&& users)
         let user = fromJust $ parameter pkt
             by = arg "by"
-            oldPc = fromJust $ getPc roomname user us
+            oldPc = getPc roomname user us
             newPc = arg "pc"
-            oldPcLevel = getPcLevel roomname oldPc pcs
+            oldPcLevel = fmap (\p -> getPcLevel roomname p pcs) oldPc
             newPcLevel = getPcLevel roomname newPc pcs
         modifyK (setUserPrivclass roomname user newPc)
-        I.sendNotice $ T.concat [user, " has been moved from ", oldPc, " to ", newPc, " by ", by]
-        I.sendChangeUserMode user roomname oldPcLevel newPcLevel
-    
+        I.sendRoomNotice roomname $ T.concat [user, " has been moved", maybe "" (T.append " from ") oldPc, " to ", newPc, " by ", by]
+        I.sendChangeUserMode user roomname (fromMaybe 0 oldPcLevel) newPcLevel
+
     "kicked" -> do
         let uname = fromJust $ parameter pkt
         modifyK (onUsers (removeUserAll roomname uname))
         I.sendKick uname (arg "by") roomname $ case body pkt of {Just "" -> Nothing; x -> x}
             
     "admin" -> case fromJust $ parameter pkt of
-        "create" -> I.sendNotice $ T.concat ["Privclass ", arg "name", " created by ", arg "by", " with: ", arg "privs"]
-        "update" -> I.sendNotice $ T.concat ["Privclass ", arg "name", " updated by ", arg "by", " with: ", arg "privs"]
-        "rename" -> I.sendNotice $ T.concat ["Privclass ", arg "prev", " renamed to ", arg "name", " by ", arg "by"]
-        "move"   -> I.sendNotice $ T.concat [arg "n", " users in privclass ", arg "prev", " moved to ", arg "name", " by ", arg "by"]
-        "remove" -> I.sendNotice $ T.concat ["Privclass", arg "name", " removed by ", arg "by"]
-        "show"   -> mapM_ I.sendNotice $ T.splitOn "\n" $ fromJust $ body pkt
-        "privclass" -> I.sendNotice $ "Admin error: " `T.append` arg "e"
+        "create" -> I.sendRoomNotice roomname $ T.concat ["Privclass ", arg "name", " created by ", arg "by", " with: ", arg "privs"]
+        "update" -> I.sendRoomNotice roomname $ T.concat ["Privclass ", arg "name", " updated by ", arg "by", " with: ", arg "privs"]
+        "rename" -> I.sendRoomNotice roomname $ T.concat ["Privclass ", arg "prev", " renamed to ", arg "name", " by ", arg "by"]
+        "move"   -> I.sendRoomNotice roomname $ T.concat [arg "n", " users in privclass ", arg "prev", " moved to ", arg "name", " by ", arg "by"]
+        "remove" -> I.sendRoomNotice roomname $ T.concat ["Privclass", arg "name", " removed by ", arg "by"]
+        "show"   -> mapM_ (I.sendRoomNotice roomname) $ T.splitOn "\n" $ fromJust $ body pkt
+        "privclass" -> I.sendRoomNotice roomname $ "Admin error: " `T.append` arg "e"
         q -> klogError $ "Unknown admin packet type " ++ show q
     
     x -> klogError $ "Unknown packet type " ++ show x
