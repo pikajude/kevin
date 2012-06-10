@@ -14,7 +14,6 @@ mkKevin sock = withSocketsDo $ do
     hSetBuffering client NoBuffering
     klogNow Blue "received a client"
     set <- execStateT (C.getAuthInfo client False) emptySettings
-    klogNow Blue $ "client info: " ++ show set
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
     logChan <- newChan
