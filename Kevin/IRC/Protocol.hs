@@ -57,7 +57,7 @@ respond pkt "MODE" = if length (params pkt) > 1
         case mode of
             "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "random unparseable garbage" $ unmask $ last $ params pkt)
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
-            _ -> sendNoticeRoom (head $ params pkt) $ "Unsupported mode " `T.append` mode
+            _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
     else do
         uname <- getsK (getUsername . settings)
         sendChanMode uname (head $ params pkt)
@@ -71,7 +71,7 @@ respond pkt "TITLE" = case params pkt of
 	[] -> sendNotice "Malformed packet"
 	[room] -> do
 		title <- getsK (M.lookup room . titles)
-		let pre = T.concat ["Title for ", room, ": "] in mapM_ (sendNoticeRoom room . T.append pre) (T.splitOn "\n" $ fromMaybe "" title)
+		let pre = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append pre) (T.splitOn "\n" $ fromMaybe "" title)
 	(room:title) -> D.sendSet room "title" $ T.unwords title
 
 respond pkt "PING" = sendPong (head $ params pkt)
