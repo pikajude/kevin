@@ -34,6 +34,7 @@ listen = fix (\f -> flip catches errHandlers $ do
     f)
 
 respond :: Packet -> T.Text -> KevinIO ()
+respond BadPacket _ = sendNotice "Bad packet, try again."
 respond pkt "JOIN" = do
     l <- getsK loggedIn
     if l

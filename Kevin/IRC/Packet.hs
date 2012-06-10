@@ -4,18 +4,17 @@ module Kevin.IRC.Packet (
     readable
 ) where
 
-import Kevin.Base (KevinException(..))
 import Prelude hiding (takeWhile)
 import qualified Data.Text as T
 import Data.Char
 import Data.Attoparsec.Text
-import Control.Exception (throw)
 import Control.Applicative ((<|>), (<$>), (<*>), (*>), (<*))
 
 data Packet = Packet { prefix :: Maybe T.Text
                      , command :: T.Text
                      , params :: [T.Text]
-                     } deriving (Show)
+                     }
+			| BadPacket deriving (Show)
 
 badChars :: String
 badChars = "\x20\x0\xd\xa"
@@ -72,7 +71,7 @@ packetParser = do
 
 parsePacket :: T.Text -> Packet
 parsePacket str = case parseOnly packetParser str of
-    Left _ -> throw ParseFailure
+    Left _ -> BadPacket
     Right p -> p
 
 showParams :: [T.Text] -> T.Text
@@ -81,3 +80,4 @@ showParams = T.unwords . map (\str -> if " " `T.isInfixOf` str then T.cons ':' s
 readable :: Packet -> T.Text
 readable (Packet (Just str) cmd pms) = flip T.append "\r\n" $ T.unwords [T.cons ':' str, cmd, showParams pms]
 readable (Packet Nothing c p) = flip T.append "\r\n" $ T.unwords [c, showParams p]
+readable _ = ""
