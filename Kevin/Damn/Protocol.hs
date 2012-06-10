@@ -48,15 +48,13 @@ respond pkt "login" = if okay pkt
     else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = do
-    roomname <- deformatRoom r
+    roomname <- deformatRoom $ fromJust $ parameter pkt
     if okay pkt
         then do
-            modifyK (onJoining (r:))
+            modifyK (onJoining (roomname:))
             uname <- getsK (getUsername . settings)
             I.sendJoin uname roomname
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
-    where
-        r = fromJust $ parameter pkt
 
 respond pkt "part" = do
     roomname <- deformatRoom $ fromJust $ parameter pkt
@@ -84,11 +82,11 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
         let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
             pc = privclass $ head $ filter (\x -> username x == uname) members
         modifyK (onUsers (setUsers roomname members))
-        when (fromJust (parameter pkt) `elem` j) $ do
+        when (roomname `elem` j) $ do
             I.sendUserList uname (nub members) roomname
             I.sendWhoList uname (nub members) roomname
             I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
-            modifyK (onJoining (delete $ fromJust $ parameter pkt))
+            modifyK (onJoining (delete roomname))
         
     "info" -> do
         us <- getsK (getUsername . settings)
