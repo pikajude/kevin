@@ -18,6 +18,7 @@ import Control.Applicative ((<$>))
 import Control.Arrow
 import Data.Maybe
 import Data.List (nubBy)
+import Data.Function (on)
 import qualified Data.Map as M
 
 type KevinState = StateT Settings IO
@@ -81,7 +82,7 @@ respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
 respond pkt "NAMES" = do
     let (room:_) = params pkt
     (me,uss) <- getsK (getUsername . settings &&& M.lookup room . users)
-    sendUserList me (nubBy (\x y -> username x == username y) $ fromMaybe [] uss) room
+    sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
 
