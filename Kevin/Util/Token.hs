@@ -18,7 +18,7 @@ import Data.Text.Encoding (decodeUtf8)
 recvUntil :: TLSCtx a -> B.ByteString -> IO B.ByteString
 recvUntil ctx str = do
     line <- recvData ctx
-    if str `B.isSuffixOf` line
+    if str `B.isInfixOf` line
         then return str
         else fmap (line `B.append`) $ recvUntil ctx str
 
@@ -44,5 +44,5 @@ getToken uname pass = do
     let cookie = (B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines) bs
         s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n" (concatHeaders [("Host", "chat.deviantart.com")]) (B.unpack cookie)
     sendData ctx $ LB.pack s
-    bq <- recvUntil ctx "</html>\n\r\n0\r\n\r\n"
+    bq <- recvUntil ctx "</html>"
     return $ (Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd) $ B.breakSubstring "dAmn_Login" bq

@@ -17,6 +17,7 @@ import Kevin.IRC.Protocol.Send
 import Control.Applicative ((<$>))
 import Control.Arrow
 import Data.Maybe
+import Data.List (nubBy)
 import qualified Data.Map as M
 
 type KevinState = StateT Settings IO
@@ -61,6 +62,18 @@ respond pkt "MODE" = if length (params pkt) > 1
         uname <- getsK (getUsername . settings)
         sendChanMode uname (head $ params pkt)
 
+respond pkt "TOPIC" = case params pkt of
+	[] -> sendNotice "Malformed packet"
+	[room] -> D.sendGet room "topic"
+	(room:topic:_) -> D.sendSet room "topic" topic
+
+respond pkt "TITLE" = case params pkt of
+	[] -> sendNotice "Malformed packet"
+	[room] -> do
+		title <- getsK (M.lookup room . titles)
+		let pre = T.concat ["Title for ", room, ": "] in mapM_ (sendNotice . T.append pre) (T.splitOn "\n" $ fromMaybe "" title)
+	(room:title) -> D.sendSet room "title" $ T.unwords title
+
 respond pkt "PING" = sendPong (head $ params pkt)
 
 respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
@@ -68,7 +81,7 @@ respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
 respond pkt "NAMES" = do
     let (room:_) = params pkt
     (me,uss) <- getsK (getUsername . settings &&& M.lookup room . users)
-    sendUserList me (fromMaybe [] uss) room
+    sendUserList me (nubBy (\x y -> username x == username y) $ fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
 
