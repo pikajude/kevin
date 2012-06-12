@@ -73,9 +73,9 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
         
     "topic" -> do
         uname <- getsK (getUsername . settings)
-        I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " $ tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
+        I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " $ entityDecode $ tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
         
-    "title" -> modifyK (onTitles (setTitle roomname (T.replace "\n" " - " $ tablumpDecode $ fromJust $ body pkt)))
+    "title" -> modifyK (onTitles (setTitle roomname (T.replace "\n" " - " $ entityDecode $ tablumpDecode $ fromJust $ body pkt)))
     
     "members" -> do
         (pcs,(uname,j)) <- getsK (privclasses &&& getUsername . settings &&& joining)
