@@ -1,6 +1,6 @@
 module Kevin.Protocol (kevinServer) where
 
-import Prelude hiding (putStrLn, catch)
+import Prelude hiding (catch)
 import Kevin.Base
 import Kevin.Util.Logger
 import qualified Kevin.IRC.Protocol as C
@@ -33,12 +33,13 @@ mkKevin sock = withSocketsDo $ do
                  , logger = logChan
                  }
 
-mkListener :: IO Socket
-mkListener = listenOn $ PortNumber 6669
+mkListener :: Int -> IO Socket
+mkListener = listenOn . PortNumber . fromIntegral
 
-kevinServer :: IO ()
-kevinServer = do
-    sock <- mkListener
+kevinServer :: Int -> IO ()
+kevinServer n = do
+    sock <- mkListener n
+    putStrLn $ "Listening on port " ++ show n
     forever $ do
         kev <- mkKevin sock
         listen kev
