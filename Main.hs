@@ -9,7 +9,7 @@ data Flag = Port Int | Version | Help deriving (Eq, Show)
 
 opts :: [OptDescr Flag]
 opts = [
-        Option "p" ["port"] (ReqArg (Port . read) "number") "local port to run the server on (defaults to 6667)",
+        Option "p" ["port"] (ReqArg (Port . read) "number") $ "local port to run the server on (defaults to " ++ show defaultPort ++ ")",
         Option "h" ["help"] (NoArg Help) "print this message",
         Option "v" ["version"] (NoArg Version) "show kevin's version number"
        ]
