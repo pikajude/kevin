@@ -5,7 +5,7 @@ import System.Environment
 defaultPort :: Int
 defaultPort = 6669
 
-data Flag = Port Int | Version | Help deriving (Eq, Show)
+data Flag = Port Int | Version | Help deriving (Eq)
 
 opts :: [OptDescr Flag]
 opts = [
