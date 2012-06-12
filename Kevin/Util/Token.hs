@@ -7,7 +7,6 @@ import Network.TLS.Extra
 import Network.HTTP.Base
 import Crypto.Random.AESCtr (makeSystem)
 import Control.Arrow
-import Control.Monad (guard)
 import Data.List
 import Text.Printf
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -40,9 +39,11 @@ getToken uname pass = do
     handshake ctx
     sendData ctx . LB.pack $ printf "POST /users/login HTTP/1.1\r\n%s\r\nContent-Length: %d\r\n\r\n%s" (concatHeaders $ ("Host", "www.deviantart.com"):headers) (length payload) payload
     bs <- recvData ctx
-    guard . not $ "wrong-password" `B.isInfixOf` bs
-    let cookie = (B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines) bs
-        s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n" (concatHeaders [("Host", "chat.deviantart.com")]) (B.unpack cookie)
-    sendData ctx $ LB.pack s
-    bq <- recvUntil ctx "dAmnChat_Init"
-    return $ (Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd) $ B.breakSubstring "dAmn_Login" bq
+    if "wrong-password" `B.isInfixOf` bs
+        then return Nothing
+        else do
+            let cookie = (B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines) bs
+                s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n" (concatHeaders [("Host", "chat.deviantart.com")]) (B.unpack cookie)
+            sendData ctx $ LB.pack s
+            bq <- recvUntil ctx "dAmnChat_Init"
+            return $ (Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd) $ B.breakSubstring "dAmn_Login" bq
