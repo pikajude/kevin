@@ -1,7 +1,7 @@
 Name:             kevin
 Version:          0.1.1
-Synopsis:         a dAmn <-> IRC proxy
-Description:      a dAmn <-> IRC proxy
+Synopsis:         a dAmn ↔ IRC proxy
+Description:      a dAmn ↔ IRC proxy
 License:          GPL
 License-file:     LICENSE
 Author:           Joel Taylor
