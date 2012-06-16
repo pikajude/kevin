@@ -28,7 +28,7 @@ entityNamed = do
     char '&'
     entity <- T.cons <$> letter <*> takeWhile1 isAlphaNum
     char ';'
-    return $ fromMaybe (T.concat ["&", entity, ";"]) $ lookupNamedEntity entity
+    return . fromMaybe (T.concat ["&", entity, ";"]) . lookupNamedEntity $ entity
 
 decodeParser :: Parser T.Text
 decodeParser = T.concat <$> many1 decodeCharacter
@@ -55,14 +55,14 @@ lookupHexEntity :: T.Text -> Maybe T.Text
 lookupHexEntity e = case R.hexadecimal $ T.cons '0' e of
     Right (n,_) -> do
         guard $ n < ord maxBound
-        return $ T.singleton $ chr n
+        return . T.singleton . chr $ n
     Left _ -> Nothing
 
 lookupNumericEntity :: T.Text -> Maybe T.Text
 lookupNumericEntity e = case R.decimal e of
     Right (n,_) -> do
         guard $ n < ord maxBound
-        return $ T.singleton $ chr n
+        return . T.singleton . chr $ n
     Left _ -> Nothing
 
 namedEntities :: [(T.Text, Int)]
