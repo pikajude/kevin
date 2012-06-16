@@ -41,9 +41,9 @@ respond pkt "JOIN" = do
         then mapM_ D.sendJoin rooms
         else modifyK (addToJoin rooms)
     where
-        rooms = T.splitOn "," $ head $ params pkt
+        rooms = T.splitOn "," . head . params $ pkt
 
-respond pkt "PART" = mapM_ D.sendPart $ T.splitOn "," $ head $ params pkt
+respond pkt "PART" = mapM_ D.sendPart . T.splitOn "," . head . params $ pkt
 
 respond pkt "PRIVMSG" = do
     let (room:msg:_) = params pkt
@@ -57,7 +57,7 @@ respond pkt "MODE" = if length (params pkt) > 1
     then do
         let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
         case mode of
-            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "random unparseable garbage" $ unmask $ last $ params pkt)
+            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "random unparseable garbage" . unmask . last . params $ pkt)
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
             _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
     else do
@@ -78,7 +78,7 @@ respond pkt "TITLE" = case params pkt of
 
 respond pkt "PING" = sendPong (head $ params pkt)
 
-respond pkt "WHOIS" = D.sendWhois $ head $ params pkt
+respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
