@@ -14,7 +14,7 @@ watchInterrupt = [E.Handler (\(e :: E.AsyncException) -> throw e),
                   E.Handler (\(_ :: E.SomeException) -> return Nothing)]
 
 mkKevin :: Socket -> IO (Maybe Kevin)
-mkKevin sock = flip E.catches watchInterrupt $ withSocketsDo $ do
+mkKevin sock = flip E.catches watchInterrupt . withSocketsDo $ do
     (client, _, _) <- accept sock
     hSetBuffering client NoBuffering
     klogNow Blue "received a client"

@@ -99,7 +99,7 @@ instance Exception KevinException
 -- actions
                    
 padLines :: Int -> T.Text -> String
-padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") $ intercalate "\n" $ map (replicate len ' ' ++) rest
+padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") . intercalate "\n" . map (replicate len ' ' ++) $ rest
 
 hGetSep :: Char -> Handle -> IO String
 hGetSep sep h = fix (\f -> hGetChar h >>= \ch -> if ch == sep then return "" else (ch:) <$> f)
