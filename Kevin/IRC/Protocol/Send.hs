@@ -78,11 +78,11 @@ sendRoomNotice room n =
 
 sendChanMsg sender room msg = mapM_ (\x ->
     sendPacket $ printf "%s PRIVMSG %s :%s" [getHost sender, room, x]
-    ) $ T.splitOn "\n" msg
+    ) . T.splitOn "\n" $ msg
 
 sendChanAction sender room msg = mapM_ (\x ->
     sendPacket $ printf "%s PRIVMSG %s :\1ACTION %s\1" [getHost sender, room, x]
-    ) $ T.splitOn "\n" msg
+    ) . T.splitOn "\n" $ msg
 
 sendKick kickee kicker room msg =
     sendPacket $ printf "%s KICK %s %s%s" [getHost kicker, room, kickee, maybeBody msg]
@@ -101,7 +101,7 @@ sendUserList us uss rm = do
     sendPacket $ printf "%s 366 %s %s :End of NAMES list." [hostname, us, rm]
     where
         names = map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss
-        chunkedNames = reverse $ map reverse $ subchunk' 432 names [[]]
+        chunkedNames = reverse . map reverse . subchunk' 432 names $ [[]]
         subchunk' n = fix (\f x y -> let hy = head y; hx = head x; ty = tail y; tx = tail x in if null x
             then y
             else if sum (map T.length hy) + T.length hx <= n
@@ -129,7 +129,7 @@ sendNoticeUnclone uname i rm =
 sendWhoisReply me us rn rooms idle signon = do
     sendPacket $ printf "%s 311 %s %s %s chat.deviantart.com * :%s" [hostname, me, us, us, rn]
     sendPacket $ printf "%s 307 %s %s :is a registered nick" [hostname, me, us]
-    sendPacket $ printf "%s 319 %s %s :%s" [hostname, me, us, T.intercalate " " $ map (T.cons '#') rooms]
+    sendPacket $ printf "%s 319 %s %s :%s" [hostname, me, us, T.intercalate " " . map (T.cons '#') $ rooms]
     sendPacket $ printf "%s 312 %s %s chat.deviantart.com :dAmn" [hostname, me, us]
     sendPacket $ printf "%s 317 %s %s %s %s :seconds idle, signon time" [hostname, me, us, T.pack $ show idle, T.pack $ show signon]
     sendPacket $ printf "%s 318 %s %s :End of /WHOIS list." [hostname, me, us]
