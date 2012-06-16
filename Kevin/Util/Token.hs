@@ -42,7 +42,7 @@ getToken uname pass = do
     if "wrong-password" `B.isInfixOf` bs
         then return Nothing
         else do
-            let cookie = (B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines) bs
+            let cookie = B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst) . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ") . B.lines $ bs
                 s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n" (concatHeaders [("Host", "chat.deviantart.com")]) (B.unpack cookie)
             sendData ctx $ LB.pack s
             bq <- recvUntil ctx "dAmnChat_Init"
