@@ -28,7 +28,7 @@ getHost :: T.Text -> T.Text
 getHost u = T.concat [":", u, "!", u, "@chat.deviantart.com"]
 
 sendPacket :: T.Text -> KevinIO ()
-sendPacket p = getK >>= \k -> io $ writeClient k (T.append p "\r\n")
+sendPacket p = getK >>= \k -> io . writeClient k $ T.append p "\r\n"
 
 maybeBody :: Maybe T.Text -> T.Text
 maybeBody = maybe "" (T.append " :")

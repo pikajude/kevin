@@ -97,7 +97,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
             rn = getArg "realname" fixedPacket
             conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) . filter (not . T.null) . T.splitOn "\n\n" . fromJust . body $ x)) . fromJust $ (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") <$> body fixedPacket
             allRooms = nub $ conns >>= (\(_,_,c) -> c)
-            (onlinespan,idle) = head . sortBy (comparing fst) $ map (\(a,b,_) -> (a,b)) $ conns
+            (onlinespan,idle) = head . sortBy (comparing fst) . map (\(a,b,_) -> (a,b)) $ conns
             signon = curtime - onlinespan
         I.sendWhoisReply us uname (entityDecode rn) allRooms idle signon
     
