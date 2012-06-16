@@ -114,9 +114,9 @@ getAuthInfo handle = fix (\f authRetry -> do
     pkt <- io $ parsePacket <$> T.hGetLine handle
     io $ klogNow Yellow $ "client <- " ++ T.unpack (readable pkt)
     case command pkt of
-        "PASS" -> modify (setHasPassed . (setPassword $ head $ params pkt))
-        "NICK" -> modify (setHasNicked . (setUsername $ head $ params pkt))
-        "USER" -> modify (setHasUsered)
+        "PASS" -> modify (setHasPassed . setPassword (head $ params pkt))
+        "NICK" -> modify (setHasNicked . setUsername (head $ params pkt))
+        "USER" -> modify setHasUsered
         _ -> io $ klogNow Red $ "invalid packet: " ++ show pkt
     if authRetry
         then checkToken handle

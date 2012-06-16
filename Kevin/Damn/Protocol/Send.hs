@@ -31,7 +31,7 @@ maybeBody :: Maybe T.Text -> T.Text
 maybeBody = maybe "" (T.append "\n\n")
 
 sendPacket :: T.Text -> KevinIO ()
-sendPacket p = getK >>= \k -> io $ writeServer k $ p `T.snoc` '\0'
+sendPacket p = getK >>= \k -> io . writeServer k . T.snoc p $ '\0'
 
 formatRoom :: T.Text -> KevinIO T.Text
 formatRoom b = 
@@ -39,7 +39,7 @@ formatRoom b =
         ("#",s) -> return $ "chat:" `T.append` s
         ("&",s) -> do
             uname <- getsK (getUsername . settings)
-            return $ T.append "pchat:" $ T.intercalate ":" $ sort $ map (T.map toLower) [uname, s]
+            return . T.append "pchat:" . T.intercalate ":" . sort . map (T.map toLower) $ [uname, s]
         r -> return $ "chat" `T.append` uncurry T.append r
 
 deformatRoom :: T.Text -> KevinIO T.Text
@@ -47,7 +47,7 @@ deformatRoom room = if "chat:" `T.isPrefixOf` room
     then return $ '#' `T.cons` T.drop 5 room
     else do
         uname <- getsK (getUsername . settings)
-        return $ '&' `T.cons` head (filter (/= uname) $ T.splitOn ":" $ T.drop 6 room)
+        return $ '&' `T.cons` head (filter (/= uname) . T.splitOn ":" . T.drop 6 $ room)
 
 type Str = T.Text -- just make it shorter
 type Room = Str

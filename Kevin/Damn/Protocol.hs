@@ -48,7 +48,7 @@ respond pkt "login" = if okay pkt
     else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = do
-    roomname <- deformatRoom $ fromJust $ parameter pkt
+    roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
             modifyK (onJoining (roomname:))
@@ -57,7 +57,7 @@ respond pkt "join" = do
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
 
 respond pkt "part" = do
-    roomname <- deformatRoom $ fromJust $ parameter pkt
+    roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
             uname <- getsK (getUsername . settings)
@@ -68,19 +68,19 @@ respond pkt "part" = do
 respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname ->
     case getArg "p" pkt of
     "privclasses" -> do
-        let pcs = parsePrivclasses $ fromJust $ body pkt
+        let pcs = parsePrivclasses . fromJust . body $ pkt
         modifyK (onPrivclasses (setPrivclasses roomname pcs))
         
     "topic" -> do
         uname <- getsK (getUsername . settings)
-        I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " $ entityDecode $ tablumpDecode $ fromJust $ body pkt) (getArg "ts" pkt)
+        I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt) (getArg "ts" pkt)
         
-    "title" -> modifyK (onTitles (setTitle roomname (T.replace "\n" " - " $ entityDecode $ tablumpDecode $ fromJust $ body pkt)))
+    "title" -> modifyK (onTitles (setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)))
     
     "members" -> do
         (pcs,(uname,j)) <- getsK (privclasses &&& getUsername . settings &&& joining)
-        let members = map (mkUser roomname pcs . parsePacket) $ init $ splitOn "\n\n" $ fromJust (body pkt)
-            pc = privclass $ head $ filter (\x -> username x == uname) members
+        let members = map (mkUser roomname pcs . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
+            pc = privclass . head . filter (\x -> username x == uname) $ members
             n = nub members
         modifyK (onUsers (setUsers roomname members))
         when (roomname `elem` j) $ do
@@ -92,12 +92,12 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
     "info" -> do
         us <- getsK (getUsername . settings)
         curtime <- io $ floor <$> getPOSIXTime
-        let fixedPacket = parsePacket $ T.init $ T.replace "\n\nusericon" "\nusericon" $ readable pkt
-            uname = T.drop 6 $ fromJust $ parameter pkt
+        let fixedPacket = parsePacket . T.init . T.replace "\n\nusericon" "\nusericon" . readable $ pkt
+            uname = T.drop 6 . fromJust . parameter $ pkt
             rn = getArg "realname" fixedPacket
-            conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) $ filter (not . T.null) $ T.splitOn "\n\n" $ fromJust $ body x)) $ fromJust $ (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") <$> body fixedPacket
+            conns = map (\x -> (read (T.unpack $ getArg "online" x) :: Int, read (T.unpack $ getArg "idle" x) :: Int, map (T.drop 8) . filter (not . T.null) . T.splitOn "\n\n" . fromJust . body $ x)) . fromJust $ (map (parsePacket . T.append "conn") . tail . T.splitOn "conn") <$> body fixedPacket
             allRooms = nub $ conns >>= (\(_,_,c) -> c)
-            (onlinespan,idle) = head $ sortBy (comparing fst) $ map (\(a,b,_) -> (a,b)) conns
+            (onlinespan,idle) = head . sortBy (comparing fst) $ map (\(a,b,_) -> (a,b)) $ conns
             signon = curtime - onlinespan
         I.sendWhoisReply us uname (entityDecode rn) allRooms idle signon
     
@@ -159,7 +159,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         "rename" -> I.sendRoomNotice roomname $ T.concat ["Privclass ", arg "prev", " renamed to ", arg "name", " by ", arg "by"]
         "move"   -> I.sendRoomNotice roomname $ T.concat [arg "n", " users in privclass ", arg "prev", " moved to ", arg "name", " by ", arg "by"]
         "remove" -> I.sendRoomNotice roomname $ T.concat ["Privclass", arg "name", " removed by ", arg "by"]
-        "show"   -> mapM_ (I.sendRoomNotice roomname) $ T.splitOn "\n" $ fromJust $ body pkt
+        "show"   -> mapM_ (I.sendRoomNotice roomname) . T.splitOn "\n" . fromJust . body $ pkt
         "privclass" -> I.sendRoomNotice roomname $ "Admin error: " `T.append` arg "e"
         q -> klogError $ "Unknown admin packet type " ++ show q
     
@@ -172,7 +172,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
 
 respond pkt "send" = I.sendNotice $ T.concat ["Send error: ", getArg "e" pkt]
 
-respond _ "ping" = getK >>= \k -> io $ writeServer k ("pong\n\0" :: T.Text)
+respond _ "ping" = getK >>= \k -> io . writeServer k $ ("pong\n\0" :: T.Text)
 
 respond _ str = klog Yellow $ "Got the packet called " ++ T.unpack str
 
