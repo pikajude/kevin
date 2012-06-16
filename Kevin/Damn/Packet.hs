@@ -61,7 +61,7 @@ getResult (Left _) = error "getResult"
 
 fixLoginPacket :: Packet -> Packet
 fixLoginPacket pkt = if command pkt == "login"
-    then pkt { args = args pkt ++ getResult (parseOnly parseArgs $ T.cons '\n' $ fromJust $ body pkt), body = Nothing }
+    then pkt { args = args pkt ++ getResult (parseOnly parseArgs . T.cons '\n' . fromJust . body $ pkt), body = Nothing }
     else pkt
 
 subPacket :: Packet -> Maybe Packet
@@ -84,4 +84,4 @@ readable (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `T.cons`) param +++ 
     where
         (+++) = T.append
         formattedArgs [] = ""
-        formattedArgs q = T.append "\n" $ T.intercalate "\n" $ map (uncurry (\x y -> x +++ "=" +++ y)) q
+        formattedArgs q = T.append "\n" . T.intercalate "\n" . map (uncurry (\x y -> x +++ "=" +++ y)) $ q

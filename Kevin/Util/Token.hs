@@ -46,4 +46,4 @@ getToken uname pass = do
                 s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n" (concatHeaders [("Host", "chat.deviantart.com")]) (B.unpack cookie)
             sendData ctx $ LB.pack s
             bq <- recvUntil ctx "dAmnChat_Init"
-            return $ (Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd) $ B.breakSubstring "dAmn_Login" bq
+            return . (Just . decodeUtf8 . B.take 32 . B.tail . B.dropWhile (/='"') . B.dropWhile (/=',') . snd) . B.breakSubstring "dAmn_Login" $ bq
