@@ -27,7 +27,7 @@ colorAsNum Cyan = 36
 colorAsNum Gray = 37
 
 runLogger :: Chan String -> IO ()
-runLogger ch = void $ forkIO $ forever $ readChan ch >>= putStrLn
+runLogger ch = void . forkIO . forever $ readChan ch >>= putStrLn
 
 interleave :: [a] -> [a] -> [a]
 interleave xs [] = xs
@@ -40,7 +40,7 @@ printf str reps = T.concat $ interleave (T.splitOn "%s" str) reps
 render :: Color -> String -> String
 render col str = "\027[" ++ show (colorAsNum col) ++ "m" ++ rtrimmed ++ "\027[0m"
     where
-        rtrimmed = reverse $ dropWhile (\x -> isSpace x || x == '\x0') $ reverse str
+        rtrimmed = reverse . dropWhile (\x -> isSpace x || x == '\x0') . reverse $ str
 
 klog_ :: Chan String -> Color -> String -> IO ()
 klog_ ch col str = writeChan ch $ render col str
