@@ -91,6 +91,11 @@ respond _ "QUIT" = klogError "client quit" >> undefined
 
 respond pkt "ADMIN" = let (p:ps) = params pkt in D.sendAdmin p $ T.intercalate " " ps
 
+respond pkt "PROMOTE" = case params pkt of
+    (room:user:group:_) -> D.sendPromote room user $ Just group
+    (room:_) -> sendRoomNotice room "Usage: /promote #room username group"
+    _ -> sendNotice "Usage: /promote #room username group"
+
 respond _ str = klogError $ T.unpack str
 
 
