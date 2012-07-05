@@ -51,8 +51,8 @@ respond pkt "join" = do
     roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
-            modifyK (onJoining (roomname:))
-            uname <- getsK (getUsername . settings)
+            modifyK $ joiningL ^%= (roomname:)
+            uname <- getsK $ getUsername . settings
             I.sendJoin uname roomname
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
 
@@ -60,8 +60,8 @@ respond pkt "part" = do
     roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
-            uname <- getsK (getUsername . settings)
-            modifyK (removeRoom roomname)
+            uname <- getsK $ getUsername . settings
+            modifyK $ removeRoom roomname
             I.sendPart uname roomname Nothing
         else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", getArg "e" pkt]
 
@@ -69,28 +69,28 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
     case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses . fromJust . body $ pkt
-        modifyK (onPrivclasses (setPrivclasses roomname pcs))
+        modifyK $ privclassL ^%= setPrivclasses roomname pcs
         
     "topic" -> do
-        uname <- getsK (getUsername . settings)
+        uname <- getsK $ getUsername . settings
         I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt) (getArg "ts" pkt)
         
-    "title" -> modifyK (onTitles (setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)))
+    "title" -> modifyK $ titlesL ^%= setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
     
     "members" -> do
-        (pcs,(uname,j)) <- getsK (privclasses &&& getUsername . settings &&& joining)
+        (pcs,(uname,j)) <- getsK $ privclasses &&& getUsername . settings &&& joining
         let members = map (mkUser roomname pcs . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
             pc = privclass . head . filter (\x -> username x == uname) $ members
             n = nub members
-        modifyK (onUsers (setUsers roomname members))
+        modifyK $ usersL ^%= setUsers roomname members
         when (roomname `elem` j) $ do
             I.sendUserList uname n roomname
             I.sendWhoList uname n roomname
             I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
-            modifyK (onJoining (delete roomname))
+            modifyK $ joiningL ^%= delete roomname
         
     "info" -> do
-        us <- getsK (getUsername . settings)
+        us <- getsK $ getUsername . settings
         curtime <- io $ floor <$> getPOSIXTime
         let fixedPacket = parsePacket . T.init . T.replace "\n\nusericon" "\nusericon" . readable $ pkt
             uname = T.drop 6 . fromJust . parameter $ pkt
@@ -107,9 +107,9 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     case command pkt of
     "join" -> do
         let usname = fromJust $ parameter pkt
-        (pcs,countUser) <- getsK (privclasses &&& numUsers roomname usname . users)
+        (pcs,countUser) <- getsK $ privclasses &&& numUsers roomname usname . users
         let us = mkUser roomname pcs modifiedPkt
-        modifyK (onUsers (addUser roomname us))
+        modifyK $ usersL ^%= addUser roomname us
         if countUser == 0
             then do
                 I.sendJoin usname roomname
@@ -118,8 +118,8 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     
     "part" -> do
         let uname = fromJust $ parameter pkt
-        modifyK (onUsers (removeUser roomname uname))
-        countUser <- getsK (numUsers roomname uname . users)
+        modifyK $ usersL ^%= removeUser roomname uname
+        countUser <- getsK $ numUsers roomname uname . users
         if countUser < 1
             then I.sendPart uname roomname $ case getArg "r" pkt of { "" -> Nothing; x -> Just x }
             else I.sendNoticeUnclone uname countUser roomname
@@ -127,30 +127,30 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     "msg" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
-        un <- getsK (getUsername . settings)
+        un <- getsK $ getUsername . settings
         unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
     
     "action" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
-        un <- getsK (getUsername . settings)
+        un <- getsK $ getUsername . settings
         unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
     
     "privchg" -> do
-        (pcs,us) <- getsK (privclasses &&& users)
+        (pcs,us) <- getsK $ privclasses &&& users
         let user = fromJust $ parameter pkt
             by = arg "by"
             oldPc = getPc roomname user us
             newPc = arg "pc"
             oldPcLevel = fmap (\p -> getPcLevel roomname p pcs) oldPc
             newPcLevel = getPcLevel roomname newPc pcs
-        modifyK (setUserPrivclass roomname user newPc)
+        modifyK $ setUserPrivclass roomname user newPc
         I.sendRoomNotice roomname $ T.concat [user, " has been moved", maybe "" (T.append " from ") oldPc, " to ", newPc, " by ", by]
         I.sendChangeUserMode user roomname (fromMaybe 0 oldPcLevel) newPcLevel
 
     "kicked" -> do
         let uname = fromJust $ parameter pkt
-        modifyK (onUsers (removeUserAll roomname uname))
+        modifyK $ usersL ^%= removeUserAll roomname uname
         I.sendKick uname (arg "by") roomname $ case body pkt of {Just "" -> Nothing; x -> x}
             
     "admin" -> case fromJust $ parameter pkt of
