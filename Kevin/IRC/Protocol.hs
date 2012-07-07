@@ -37,10 +37,10 @@ listen = fix (\f -> flip catches errHandlers $ do
 respond :: Packet -> T.Text -> KevinIO ()
 respond BadPacket _ = sendNotice "Bad packet, try again."
 respond pkt "JOIN" = do
-    l <- gets_ loggedIn
+    l <- gets_ (^. loggedIn)
     if l
         then mapM_ D.sendJoin rooms
-        else modify_ (addToJoin rooms)
+        else modify_ $ joining ^%= (rooms ++)
     where
         rooms = T.splitOn "," . head . params $ pkt
 
@@ -73,7 +73,7 @@ respond pkt "TOPIC" = case params pkt of
 respond pkt "TITLE" = case params pkt of
 	[] -> sendNotice "Malformed packet"
 	[room] -> do
-		title <- gets_ (M.lookup room . titles)
+		title <- gets_ $  M.lookup room . (^. titles)
 		let pre = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append pre) (T.splitOn "\n" $ fromMaybe "" title)
 	(room:title) -> D.sendSet room "title" $ T.unwords title
 
@@ -83,7 +83,7 @@ respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- gets_ (getUsername . settings &&& M.lookup room . users)
+    (me,uss) <- gets_ $ getUsername . settings &&& M.lookup room . getL users
     sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)

@@ -1,5 +1,5 @@
 module Kevin.Types (
-    Kevin(..),
+    Kevin(Kevin),
     KevinIO,
     Privclass,
     Chatroom,
@@ -11,7 +11,13 @@ module Kevin.Types (
     get_,
     gets_,
     put_,
-    modify_
+    modify_,
+    
+    -- lenses
+    users, privclasses, titles, toJoin, joining, loggedIn,
+    
+    -- other accessors
+    damn, irc, dChan, iChan, settings, logger
 ) where
     
 import qualified Data.Text as T
@@ -22,39 +28,7 @@ import Control.Concurrent.STM.TVar
 import Control.Monad.Reader
 import Control.Monad.STM (atomically)
 import Kevin.Settings
-
-data Kevin = Kevin { damn :: Handle
-                   , irc :: Handle
-                   , dChan :: Chan T.Text
-                   , iChan :: Chan T.Text
-                   , settings :: Settings
-                   , users :: UserStore
-                   , privclasses :: PrivclassStore
-                   , titles :: TitleStore
-                   , toJoin :: [T.Text]
-                   , joining :: [T.Text]
-                   , loggedIn :: Bool
-                   , logger :: Chan String
-                   }
-
-type KevinIO = ReaderT (TVar Kevin) IO
-
-get_ :: KevinIO Kevin
-get_ = ask >>= liftIO . readTVarIO
-
-put_ :: Kevin -> KevinIO ()
-put_ k = ask >>= io . atomically . flip writeTVar k
-
-gets_ :: (Kevin -> a) -> KevinIO a
-gets_ = flip liftM get_
-
-modify_ :: (Kevin -> Kevin) -> KevinIO ()
-modify_ f = do
-    var <- ask
-    io . atomically $ modifyTVar var f
-
-io :: MonadIO m => IO a -> m a
-io = liftIO
+import Data.Lens.Template
 
 type Chatroom = T.Text
 
@@ -75,3 +49,38 @@ type Privclass = (T.Text, Int)
 
 type Title = T.Text
 type TitleStore = M.Map Chatroom Title
+
+data Kevin = Kevin { damn :: Handle
+                   , irc :: Handle
+                   , dChan :: Chan T.Text
+                   , iChan :: Chan T.Text
+                   , settings :: Settings
+                   , _users :: UserStore
+                   , _privclasses :: PrivclassStore
+                   , _titles :: TitleStore
+                   , _toJoin :: [T.Text]
+                   , _joining :: [T.Text]
+                   , _loggedIn :: Bool
+                   , logger :: Chan String
+                   }
+
+$( makeLens ''Kevin )
+
+type KevinIO = ReaderT (TVar Kevin) IO
+
+get_ :: KevinIO Kevin
+get_ = ask >>= liftIO . readTVarIO
+
+put_ :: Kevin -> KevinIO ()
+put_ k = ask >>= io . atomically . flip writeTVar k
+
+gets_ :: (Kevin -> a) -> KevinIO a
+gets_ = flip liftM get_
+
+modify_ :: (Kevin -> Kevin) -> KevinIO ()
+modify_ f = do
+    var <- ask
+    io . atomically $ modifyTVar var f
+
+io :: MonadIO m => IO a -> m a
+io = liftIO
