@@ -8,10 +8,10 @@ module Kevin.Types (
     PrivclassStore,
     UserStore,
     TitleStore,
-    getK,
-    getsK,
-    putK,
-    modifyK
+    get_,
+    gets_,
+    put_,
+    modify_
 ) where
     
 import qualified Data.Text as T
@@ -19,7 +19,7 @@ import qualified Data.Map as M
 import System.IO
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Monad.State
+import Control.Monad.Reader
 import Control.Monad.STM (atomically)
 import Kevin.Settings
 
@@ -37,20 +37,20 @@ data Kevin = Kevin { damn :: Handle
                    , logger :: Chan String
                    }
 
-type KevinIO = StateT (TVar Kevin) IO
+type KevinIO = ReaderT (TVar Kevin) IO
 
-getK :: KevinIO Kevin
-getK = get >>= liftIO . readTVarIO
+get_ :: KevinIO Kevin
+get_ = ask >>= liftIO . readTVarIO
 
-putK :: Kevin -> KevinIO ()
-putK k = get >>= io . atomically . flip writeTVar k
+put_ :: Kevin -> KevinIO ()
+put_ k = ask >>= io . atomically . flip writeTVar k
 
-getsK :: (Kevin -> a) -> KevinIO a
-getsK = flip liftM getK
+gets_ :: (Kevin -> a) -> KevinIO a
+gets_ = flip liftM get_
 
-modifyK :: (Kevin -> Kevin) -> KevinIO ()
-modifyK f = do
-    var <- get
+modify_ :: (Kevin -> Kevin) -> KevinIO ()
+modify_ f = do
+    var <- ask
     io . atomically $ modifyTVar var f
 
 io :: MonadIO m => IO a -> m a
