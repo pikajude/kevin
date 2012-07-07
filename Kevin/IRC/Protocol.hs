@@ -16,6 +16,7 @@ import qualified Kevin.Damn.Protocol.Send as D
 import Kevin.IRC.Protocol.Send
 import Control.Applicative ((<$>))
 import Control.Arrow
+import Control.Monad.State
 import Data.Maybe
 import Data.List (nubBy)
 import Data.Function (on)
@@ -28,7 +29,7 @@ cleanup = klog Green "cleanup client"
 
 listen :: KevinIO ()
 listen = fix (\f -> flip catches errHandlers $ do
-    k <- getK
+    k <- get_
     pkt <- io $ parsePacket <$> readClient k
     respond pkt (command pkt)
     f)
@@ -36,10 +37,10 @@ listen = fix (\f -> flip catches errHandlers $ do
 respond :: Packet -> T.Text -> KevinIO ()
 respond BadPacket _ = sendNotice "Bad packet, try again."
 respond pkt "JOIN" = do
-    l <- getsK loggedIn
+    l <- gets_ loggedIn
     if l
         then mapM_ D.sendJoin rooms
-        else modifyK (addToJoin rooms)
+        else modify_ (addToJoin rooms)
     where
         rooms = T.splitOn "," . head . params $ pkt
 
@@ -61,7 +62,7 @@ respond pkt "MODE" = if length (params pkt) > 1
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
             _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
     else do
-        uname <- getsK (getUsername . settings)
+        uname <- gets_ (getUsername . settings)
         sendChanMode uname (head $ params pkt)
 
 respond pkt "TOPIC" = case params pkt of
@@ -72,7 +73,7 @@ respond pkt "TOPIC" = case params pkt of
 respond pkt "TITLE" = case params pkt of
 	[] -> sendNotice "Malformed packet"
 	[room] -> do
-		title <- getsK (M.lookup room . titles)
+		title <- gets_ (M.lookup room . titles)
 		let pre = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append pre) (T.splitOn "\n" $ fromMaybe "" title)
 	(room:title) -> D.sendSet room "title" $ T.unwords title
 
@@ -82,7 +83,7 @@ respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- getsK (getUsername . settings &&& M.lookup room . users)
+    (me,uss) <- gets_ (getUsername . settings &&& M.lookup room . users)
     sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)

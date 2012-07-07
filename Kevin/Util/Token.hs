@@ -26,6 +26,7 @@ concatHeaders = intercalate "\r\n" . map (\(x,y) -> x ++ ": " ++ y)
 
 getToken :: T.Text -> T.Text -> IO (Maybe T.Text)
 getToken uname pass = do
+    print "starting"
     let params = defaultParams { pCiphers = ciphersuite_all
                                , onCertificatesRecv = certificateChecks
                                      [certificateVerifyChain,
@@ -34,11 +35,16 @@ getToken uname pass = do
         headers = [("Connection", "closed"),
                    ("Content-Type", "application/x-www-form-urlencoded")] :: [(String,String)]
     gen <- makeSystem
+    print "makeSystem"
     ctx <- connectionClient "www.deviantart.com" "443" params gen
+    print "ctx"
     let payload = urlEncodeVars [("username", T.unpack uname),("password", T.unpack pass),("remember_me","1")]
     handshake ctx
+    print "handshake"
     sendData ctx . LB.pack $ printf "POST /users/login HTTP/1.1\r\n%s\r\nContent-Length: %d\r\n\r\n%s" (concatHeaders $ ("Host", "www.deviantart.com"):headers) (length payload) payload
+    print "send"
     bs <- recvData ctx
+    print "recv"
     if "wrong-password" `B.isInfixOf` bs
         then return Nothing
         else do

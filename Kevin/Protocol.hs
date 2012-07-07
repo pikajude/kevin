@@ -7,6 +7,7 @@ import qualified Control.Exception as E
 import qualified Kevin.IRC.Protocol as C
 import qualified Kevin.Damn.Protocol as S
 import System.IO (hSetBuffering, BufferMode(..))
+import Control.Monad.State
 import Data.Monoid (mempty)
 
 watchInterrupt :: [E.Handler (Maybe Kevin)]
@@ -57,6 +58,6 @@ listen kevin = do
     runLogger (logger kevin)
     runPrinter (dChan kevin) (damn kevin)
     runPrinter (iChan kevin) (irc kevin)
-    forkIO $ evalStateT (bracket_ S.initialize (S.cleanup >> io (closeClient kevin)) S.listen) mvar
-    forkIO $ evalStateT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin)) C.listen) mvar
+    forkIO . void $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeClient kevin)) S.listen) mvar
+    forkIO . void $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin)) C.listen) mvar
     return ()
