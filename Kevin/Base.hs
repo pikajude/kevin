@@ -1,40 +1,26 @@
 module Kevin.Base (
-    Kevin(..),
-    KevinIO,
+    module Kevin.Types,
     KevinException(..),
     KevinServer(..),
     User(..),
-    Privclass,
-    Chatroom,
-    Title,
-    UserStore,
-    PrivclassStore,
-    TitleStore,
     
     -- * Modifiers
     addUser,
     removeUser,
     removeUserAll,
     setUsers,
-    usersL,
     numUsers,
     
     addPrivclass,
     setPrivclasses,
-    privclassL,
     getPcLevel,
     getPc,
     setUserPrivclass,
     changePrivclassName,
     
-    logIn,
-    
-    addToJoin,
-    joiningL,
     removeRoom,
     
     setTitle,
-    titlesL,
     
     -- * Exports
     module K,
@@ -42,10 +28,6 @@ module Kevin.Base (
     -- * Working with KevinState
     io,
     runPrinter,
-    get_,
-    put_,
-    gets_,
-    modify_,
     
     if',
     
@@ -56,7 +38,7 @@ import Kevin.Util.Logger
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text.Encoding as T
-import Data.List (intercalate, nub, findIndices)
+import Data.List (intercalate, findIndices)
 import Data.Maybe
 import System.IO as K (Handle, hClose, hIsClosed, hGetChar)
 import Control.Exception as K (IOException)
@@ -125,14 +107,8 @@ instance KevinServer Kevin where
     closeServer = hClose . damn
 
 -- Kevin modifiers
-logIn :: Kevin -> Kevin
-logIn k = k { loggedIn = True }
-
-addToJoin :: [T.Text] -> Kevin -> Kevin
-addToJoin rooms k = k { toJoin = nub $ rooms ++ toJoin k }
-
 removeRoom :: Chatroom -> Kevin -> Kevin
-removeRoom c = (privclassL ^%= M.delete c) . (usersL ^%= M.delete c)
+removeRoom c = (privclasses ^%= M.delete c) . (users ^%= M.delete c)
 
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
@@ -155,17 +131,11 @@ removeOne' f (x:xs) = if f x then xs else x:removeOne' f xs
 setUsers :: Chatroom -> [User] -> UserStore -> UserStore
 setUsers = M.insert
 
-usersL :: Lens Kevin UserStore
-usersL = lens users (\t k -> k { users = t })
-
 addPrivclass :: Chatroom -> Privclass -> PrivclassStore -> PrivclassStore
 addPrivclass room (p,i) = M.insertWith M.union room (M.singleton p i)
 
 setPrivclasses :: Chatroom -> [Privclass] -> PrivclassStore -> PrivclassStore
 setPrivclasses room ps = M.insert room (M.fromList ps)
-
-privclassL :: Lens Kevin PrivclassStore
-privclassL = lens privclasses (\t k -> k { privclasses = t })
 
 getPc :: Chatroom -> T.Text -> UserStore -> Maybe T.Text
 getPc room user st = case M.lookup room st of
@@ -176,18 +146,12 @@ getPcLevel :: Chatroom -> T.Text -> PrivclassStore -> Int
 getPcLevel room pcname store = fromMaybe 0 $ M.lookup room store >>= M.lookup pcname
 
 setUserPrivclass :: Chatroom -> T.Text -> T.Text -> Kevin -> Kevin
-setUserPrivclass room user pc k = (usersL ^%= M.adjust (mapWhen ((user ==) . username) (\u -> u {privclass = pc, privclassLevel = pclevel})) room) k
+setUserPrivclass room user pc k = (users ^%= M.adjust (mapWhen ((user ==) . username) (\u -> u {privclass = pc, privclassLevel = pclevel})) room) k
     where
-        pclevel = getPcLevel room pc $ privclasses k
+        pclevel = getPcLevel room pc $ k ^. privclasses
 
 changePrivclassName :: Chatroom -> T.Text -> T.Text -> UserStore -> UserStore
 changePrivclassName room old new = M.adjust (mapWhen ((old ==) . privclass) (\u -> u {privclass = new})) room
 
 setTitle :: Chatroom -> Title -> TitleStore -> TitleStore
 setTitle = M.insert
-
-titlesL :: Lens Kevin TitleStore
-titlesL = lens titles (\t k -> k { titles = t })
-
-joiningL :: Lens Kevin [T.Text]
-joiningL = lens joining (\t k -> k { joining = t })

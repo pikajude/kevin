@@ -25,19 +25,18 @@ mkKevin sock = flip E.catches watchInterrupt . withSocketsDo $ do
     logChan <- newChan
     damnChan <- newChan
     ircChan <- newChan
-    return $ Just Kevin { damn = damnSock
-                        , irc = client
-                        , dChan = damnChan
-                        , iChan = ircChan
-                        , settings = set
-                        , users = mempty
-                        , privclasses = mempty
-                        , titles = mempty
-                        , toJoin = mempty
-                        , joining = mempty
-                        , loggedIn = False
-                        , logger = logChan
-                        }
+    return . Just $ Kevin damnSock
+                          client
+                          damnChan
+                          ircChan
+                          set
+                          mempty
+                          mempty
+                          mempty
+                          mempty
+                          mempty
+                          False
+                          logChan
 
 mkListener :: Int -> IO Socket
 mkListener = listenOn . PortNumber . fromIntegral

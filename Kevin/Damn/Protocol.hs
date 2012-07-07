@@ -43,15 +43,15 @@ respond _ "dAmnServer" = do
 
 respond pkt "login" = if okay pkt
     then do
-        modify_ logIn
-        gets_ toJoin >>= mapM_ sendJoin
+        modify_ $ loggedIn ^= True
+        gets_ (^. toJoin) >>= mapM_ sendJoin
     else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = do
     roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
-            modify_ $ joiningL ^%= (roomname:)
+            modify_ $ joining ^%= (roomname:)
             uname <- gets_ $ getUsername . settings
             I.sendJoin uname roomname
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
@@ -69,25 +69,25 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
     case getArg "p" pkt of
     "privclasses" -> do
         let pcs = parsePrivclasses . fromJust . body $ pkt
-        modify_ $ privclassL ^%= setPrivclasses roomname pcs
+        modify_ $ privclasses ^%= setPrivclasses roomname pcs
         
     "topic" -> do
         uname <- gets_ $ getUsername . settings
         I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt) (getArg "ts" pkt)
         
-    "title" -> modify_ $ titlesL ^%= setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
+    "title" -> modify_ $ titles ^%= setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
     
     "members" -> do
-        (pcs,(uname,j)) <- gets_ $ privclasses &&& getUsername . settings &&& joining
+        (pcs,(uname,j)) <- gets_ $ getL privclasses &&& getUsername . settings &&& getL joining
         let members = map (mkUser roomname pcs . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
             pc = privclass . head . filter (\x -> username x == uname) $ members
             n = nub members
-        modify_ $ usersL ^%= setUsers roomname members
+        modify_ $ users ^%= setUsers roomname members
         when (roomname `elem` j) $ do
             I.sendUserList uname n roomname
             I.sendWhoList uname n roomname
             I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
-            modify_ $ joiningL ^%= delete roomname
+            modify_ $ joining ^%= delete roomname
         
     "info" -> do
         us <- gets_ $ getUsername . settings
@@ -107,9 +107,9 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     case command pkt of
     "join" -> do
         let usname = fromJust $ parameter pkt
-        (pcs,countUser) <- gets_ $ privclasses &&& numUsers roomname usname . users
+        (pcs,countUser) <- gets_ $ getL privclasses &&& numUsers roomname usname . getL users
         let us = mkUser roomname pcs modifiedPkt
-        modify_ $ usersL ^%= addUser roomname us
+        modify_ $ users ^%= addUser roomname us
         if countUser == 0
             then do
                 I.sendJoin usname roomname
@@ -118,8 +118,8 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     
     "part" -> do
         let uname = fromJust $ parameter pkt
-        modify_ $ usersL ^%= removeUser roomname uname
-        countUser <- gets_ $ numUsers roomname uname . users
+        modify_ $ users ^%= removeUser roomname uname
+        countUser <- gets_ $ numUsers roomname uname . getL users
         if countUser < 1
             then I.sendPart uname roomname $ case getArg "r" pkt of { "" -> Nothing; x -> Just x }
             else I.sendNoticeUnclone uname countUser roomname
@@ -137,7 +137,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
     
     "privchg" -> do
-        (pcs,us) <- gets_ $ privclasses &&& users
+        (pcs,us) <- gets_ $ getL privclasses &&& getL users
         let user = fromJust $ parameter pkt
             by = arg "by"
             oldPc = getPc roomname user us
@@ -150,7 +150,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
 
     "kicked" -> do
         let uname = fromJust $ parameter pkt
-        modify_ $ usersL ^%= removeUserAll roomname uname
+        modify_ $ users ^%= removeUserAll roomname uname
         I.sendKick uname (arg "by") roomname $ case body pkt of {Just "" -> Nothing; x -> x}
             
     "admin" -> case fromJust $ parameter pkt of
