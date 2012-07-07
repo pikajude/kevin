@@ -72,7 +72,6 @@ import qualified Data.Map as M
 import Data.Typeable
 import Data.Lens.Common as K
 import Kevin.Types
-import Debug.Trace
 
 if' :: Bool -> a -> a -> a
 if' x y z = if x then y else z
@@ -122,8 +121,8 @@ instance KevinServer Kevin where
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
         writeChan (dChan k) pkt
     
-    closeClient k = trace "fuck!" . hClose $ irc k
-    closeServer k = trace "fuck!" . hClose $ damn k
+    closeClient = hClose . irc
+    closeServer = hClose . damn
 
 -- Kevin modifiers
 logIn :: Kevin -> Kevin
