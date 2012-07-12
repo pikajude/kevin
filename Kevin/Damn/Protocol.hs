@@ -169,6 +169,12 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         pkt = fromJust $ subPacket spk
         modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" (fromJust $ body spk))
         arg = flip getArg pkt
+                
+respond pkt "kicked" = do
+    roomname <- deformatRoom (fromJust $ parameter pkt)
+    uname <- gets_ $ getUsername . settings
+    modify_ $ removeRoom roomname
+    I.sendKick uname (getArg "by" pkt) roomname $ case body pkt of {Just "" -> Nothing; x -> x}
 
 respond pkt "send" = I.sendNotice $ T.concat ["Send error: ", getArg "e" pkt]
 
