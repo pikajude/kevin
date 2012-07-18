@@ -16,11 +16,13 @@ fromRight :: (Show a) => Either a b -> b
 fromRight (Left x) = error $ "fromRight on Left " ++ show x
 fromRight (Right a) = a
 
+{-# NOINLINE regexReplace #-}
 regexReplace :: Regex -> ([String] -> String) -> String -> String
 regexReplace find replace = fix (\f str -> case fromRight . unsafePerformIO $ regexec find str of
     Just (bef, _, af, matches) -> concat [bef, replace matches, f af]
     Nothing -> str)
 
+{-# NOINLINE regexen #-}
 regexen :: [(Regex, [String] -> String)]
 regexen = let ($$) = (,) in map (first (fromRight . unsafePerformIO . compile defaultCompOpt defaultExecOpt)) . reverse $ [
         "&b\t"      $$ const "\2",
