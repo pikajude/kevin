@@ -65,10 +65,16 @@ sendSetUserMode us rm m = unless (T.null mode) $
     where mode = levelToMode m
 
 sendChangeUserMode us rm old new = unless (oldMode == newMode) $
-    sendPacket $ printf "%s MODE %s -%s+%s %s" [hostname, rm, oldMode, newMode, us]
+    sendPacket $ printf "%s MODE %s %s" [hostname, rm, modesAndUser]
     where
         oldMode = levelToMode old
         newMode = levelToMode new
+        modesAndUser = case (oldMode, newMode) of
+            ("", "") -> T.concat ["-v ", us]
+            ("", _) -> T.concat ["+", newMode, " ", us]
+            (_, "") -> T.concat ["-", oldMode, " ", us]
+            (a, b) -> T.concat ["-", a, "+", b, " ", us, " ", us]
+
 
 sendNotice =
     sendPacket . printf "NOTICE AUTH :%s" . return
