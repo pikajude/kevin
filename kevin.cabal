@@ -1,5 +1,5 @@
 Name:             kevin
-Version:          0.1.5.2
+Version:          0.1.5.3
 Synopsis:         a dAmn ↔ IRC proxy
 Description:      a dAmn ↔ IRC proxy
 License:          GPL
@@ -20,4 +20,4 @@ Executable kevin
     Other-Modules:    Kevin, Kevin.Protocol, Kevin.Base, Kevin.Util.Logger, Kevin.IRC.Protocol, Kevin.Damn.Protocol, Kevin.Util.Entity, Kevin.Util.Tablump, Kevin.Damn.Packet, Kevin.Damn.Protocol.Send, Kevin.IRC.Protocol.Send, Kevin.IRC.Packet, Kevin.Settings, Kevin.Types, Kevin.Util.Token
     extensions:       CPP, DeriveDataTypeable, ExistentialQuantification, OverloadedStrings, ScopedTypeVariables, TemplateHaskell
     ghc-options:      -Wall -fno-warn-unused-do-bind -threaded
-    cpp-options:      -DVERSION="0.1.5.2"
+    cpp-options:      -DVERSION="0.1.5.3"
