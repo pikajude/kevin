@@ -57,7 +57,7 @@ regexen = let ($$) = (,) in map (first (fromRight . unsafePerformIO . compile de
         "&a\t(.+?)\t.*?\t" $$ \(x:_) -> printf "%s (" x,
         "&link\t(.+?)\t&\t" $$ head,
         "&link\t(.+?)\t(.+?)\t&\t" $$ \(x:y:_) -> printf "%s (%s)" x y,
-        "&dev\t.\t(.+?)\t" $$ head,
+        "&dev\t.+?\t(.+?)\t" $$ head,
         "&avatar\t(.+?)\t.+?\t" $$ \(x:_) -> printf ":icon%s:" x,
         "&thumb\t(.+?)\t.+?\t.+?\t.+?\t.+?\t.+?\t.+?\t" $$ \(x:_) -> printf ":thumb%s:" x,
         "&img\t(.+?)\t(.*?)\t(.*?)\t" $$ \(x:y:z:_) -> printf "<img src='%s' alt='%s' title='%s' />" x y z,
