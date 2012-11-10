@@ -14,7 +14,7 @@ module Kevin.Types (
     modify_,
     
     -- lenses
-    users, privclasses, titles, toJoin, joining, loggedIn,
+    users, privclasses, titles, joining, loggedIn,
     
     -- other accessors
     damn, irc, dChan, iChan, settings, logger
@@ -58,7 +58,6 @@ data Kevin = Kevin { damn :: Handle
                    , _users :: UserStore
                    , _privclasses :: PrivclassStore
                    , _titles :: TitleStore
-                   , _toJoin :: [T.Text]
                    , _joining :: [T.Text]
                    , _loggedIn :: Bool
                    , logger :: Chan String

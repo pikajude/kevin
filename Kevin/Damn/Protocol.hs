@@ -44,7 +44,7 @@ respond _ "dAmnServer" = do
 respond pkt "login" = if okay pkt
     then do
         modify_ $ loggedIn ^= True
-        gets_ (^. toJoin) >>= mapM_ sendJoin
+        gets_ (^. joining) >>= mapM_ sendJoin
     else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = do
