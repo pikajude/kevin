@@ -34,7 +34,6 @@ mkKevin sock = flip E.catches watchInterrupt . withSocketsDo $ do
                           mempty
                           mempty
                           mempty
-                          mempty
                           False
                           logChan
 
