@@ -64,7 +64,7 @@ regexen = let ($$) = (,) in map (first (fromRight . unsafePerformIO . compile de
         "&iframe\t(.+?)\t(.*?)\t(.*?)\t" $$ \(x:y:z:_) -> printf "<iframe src='%s' width='%s' height='%s' />" x y z,
         "&acro\t(.+?)\t" $$ \(x:_) -> printf "<acronym title='%s'>" x,
         "&abbr\t(.+?)\t" $$ \(x:_) -> printf "<abbr title='%s'>" x,
-        " <abbr title='colors:[0-9A-Fa-f]{6}:[0-9A-Fa-f]{6}'></abbr>" $$ const "",
+        " ?<abbr title='colors:[0-9A-Fa-f]{6}:[0-9A-Fa-f]{6}'></abbr>" $$ const "",
         "^<abbr title='(.+?)'>.+?</abbr>:" $$ \(x:_) -> printf "%s:" x,
         "^[a-zA-Z0-9\\-_]+<abbr title='(.+?)'></abbr>:" $$ \(x:_) -> printf "%s:" x
     ]
