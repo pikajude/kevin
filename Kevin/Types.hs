@@ -80,10 +80,10 @@ type KevinS = StateT Kevin STM
 
 kevin :: KevinS a -> KevinIO a
 kevin m = ask >>= \v -> liftIO $ atomically $ do
-  s <- readTVar v
-  (a, t) <- runStateT m s
-  writeTVar v t
-  return a
+    s <- readTVar v
+    (a, t) <- runStateT m s
+    writeTVar v t
+    return a
 
 type KevinIO = ReaderT (TVar Kevin) IO
 
