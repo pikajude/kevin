@@ -11,7 +11,6 @@ module Kevin.IRC.Protocol.Send (
     sendTopic,
     sendChanMode,
     sendUserList,
-    sendWhoList,
     sendPong,
     sendNoticeClone,
     sendNoticeUnclone,
@@ -48,7 +47,6 @@ sendKick :: Username -> Username -> Room -> Maybe Str -> KevinIO ()
 sendTopic :: Username -> Room -> Username -> Str -> Str -> KevinIO ()
 sendChanMode :: Username -> Room -> KevinIO ()
 sendUserList :: Username -> [User] -> Room -> KevinIO ()
-sendWhoList :: Username -> [User] -> Room -> KevinIO ()
 sendPong :: T.Text -> KevinIO ()
 sendNoticeClone :: Username -> Int -> Room -> KevinIO ()
 sendNoticeUnclone :: Username -> Int -> Room -> KevinIO ()
@@ -104,7 +102,7 @@ sendChanMode us rm = do
 sendUserList us uss rm = do
     mapM_ (\nms ->
         sendPacket $ printf "%s 353 %s = %s :%s" [hostname, us, rm, T.unwords nms]) chunkedNames
-    sendPacket $ printf "%s 366 %s %s :End of NAMES list." [hostname, us, rm]
+    sendPacket $ printf "%s 366 %s %s :End of /NAMES list." [hostname, us, rm]
     where
         names = map (\u -> T.concat [levelToSym $ privclassLevel u, username u]) uss
         chunkedNames = reverse . map reverse . subchunk' 432 names $ [[]]
@@ -113,12 +111,6 @@ sendUserList us uss rm = do
             else if sum (map T.length hy) + T.length hx <= n
                 then f tx ((hx:hy):ty)
                 else f tx ([hx]:y))
-
-sendWhoList us uss rm = do
-    mapM_ (sendPacket . (\u ->
-        printf "%s 352 %s %s %s chat.deviantart.com chat.deviantart.com %s Hr%s :0 %s" [hostname, us, rm, username u, username u, symbol u, realname u]
-        )) uss
-    sendPacket $ printf "%s 315 %s %s :End of WHO list." [hostname, us, rm]
 
 sendPong p =
     sendPacket $ printf "%s PONG chat.deviantart.com :%s" [hostname, p]
