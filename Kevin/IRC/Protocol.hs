@@ -40,7 +40,7 @@ respond pkt "JOIN" = do
     l <- gets_ (^. loggedIn)
     if l
         then mapM_ D.sendJoin rooms
-        else modify_ $ joining ^%= (rooms ++)
+        else modify_ $ joining %~ (rooms ++)
     where
         rooms = T.splitOn "," . head . params $ pkt
 
@@ -83,7 +83,7 @@ respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- gets_ $ getUsername . settings &&& M.lookup room . getL users
+    (me,uss) <- gets_ $ getUsername . settings &&& M.lookup room . view users
     sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
