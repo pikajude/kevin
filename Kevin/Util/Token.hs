@@ -14,7 +14,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 
-recvUntil :: TLSCtx a -> B.ByteString -> IO B.ByteString
+recvUntil :: TLSCtx -> B.ByteString -> IO B.ByteString
 recvUntil ctx str = do
     line <- recvData ctx
     if str `B.isInfixOf` line
@@ -28,8 +28,7 @@ getToken :: T.Text -> T.Text -> IO (Maybe T.Text)
 getToken uname pass = do
     let params = defaultParams { pCiphers = ciphersuite_all
                                , onCertificatesRecv = certificateChecks
-                                     [certificateVerifyChain,
-                                      return . certificateVerifyDomain "chat.deviantart.com"]
+                                     [return . certificateVerifyDomain "chat.deviantart.com"]
                                }
         headers = [("Connection", "closed"),
                    ("Content-Type", "application/x-www-form-urlencoded")] :: [(String,String)]
