@@ -31,7 +31,7 @@ username = do
     u <- option "" (T.cons <$> char '!' <*> user)
     h <- option "" (T.cons <$> char '@' <*> servername)
     return $ T.concat [n, u, h]
-    
+
 nick :: Parser T.Text
 nick = T.cons <$> letter <*> takeWhile (inClass "a-zA-Z0-9[]\\`^{}-")
 

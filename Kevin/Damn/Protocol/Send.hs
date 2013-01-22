@@ -2,7 +2,7 @@ module Kevin.Damn.Protocol.Send (
     sendPacket,
     formatRoom,
     deformatRoom,
-    
+
     sendHandshake,
     sendLogin,
     sendJoin,
@@ -34,11 +34,11 @@ sendPacket :: T.Text -> KevinIO ()
 sendPacket p = get_ >>= \k -> io . writeServer k . T.snoc p $ '\0'
 
 formatRoom :: T.Text -> KevinIO T.Text
-formatRoom b = 
+formatRoom b =
     case T.splitAt 1 b of
         ("#",s) -> return $ "chat:" `T.append` s
         ("&",s) -> do
-            uname <- gets_ (getUsername . settings)
+            uname <- kevin $ use name
             return . T.append "pchat:" . T.intercalate ":" . sort . map (T.map toLower) $ [uname, s]
         r -> return $ "chat" `T.append` uncurry T.append r
 
@@ -46,7 +46,7 @@ deformatRoom :: T.Text -> KevinIO T.Text
 deformatRoom room = if "chat:" `T.isPrefixOf` room
     then return $ '#' `T.cons` T.drop 5 room
     else do
-        uname <- gets_ (getUsername . settings)
+        uname <- kevin $ use name
         return $ '&' `T.cons` head (filter (/= uname) . T.splitOn ":" . T.drop 6 $ room)
 
 type Str = T.Text -- just make it shorter
