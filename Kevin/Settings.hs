@@ -1,39 +1,18 @@
-module Kevin.Settings (
-    Settings(..),
-    emptySettings,
-    setUsername,
-    setAuthtoken,
-    setPassword,
-    setHasPassed,
-    setHasNicked,
-    setHasUsered
-) where
-    
+{-# LANGUAGE TemplateHaskell #-}
+module Kevin.Settings where
+
+import Control.Lens
 import Data.Text
 
-data Settings = Settings { getUsername :: Text
-                         , getPassword :: Text
-                         , getAuthtoken :: Text
-                         , hasPassed :: Bool
-                         , hasNicked :: Bool
-                         , hasUsered :: Bool
+data Settings = Settings { _name      :: Text
+                         , _password  :: Text
+                         , _authtoken :: Text
+                         , _passed :: Bool
+                         , _nicked :: Bool
+                         , _usered :: Bool
                          } deriving (Show)
 
+makeClassy ''Settings
+
 emptySettings :: Settings
-emptySettings = Settings { getUsername = ""
-                         , getPassword = ""
-                         , getAuthtoken = ""
-                         , hasPassed = False
-                         , hasNicked = False
-                         , hasUsered = False
-                         }
-
-setUsername, setAuthtoken, setPassword :: Text -> Settings -> Settings
-setHasPassed, setHasNicked, setHasUsered :: Settings -> Settings
-
-setUsername  str set = set { getUsername  = str }
-setAuthtoken str set = set { getAuthtoken = str }
-setPassword  str set = set { getPassword  = str }
-setHasPassed set = set { hasPassed = True }
-setHasNicked set = set { hasNicked = True }
-setHasUsered set = set { hasUsered = True }
+emptySettings = Settings "" "" "" False False False

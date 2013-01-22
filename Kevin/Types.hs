@@ -58,7 +58,7 @@ data Kevin = Kevin { damn :: Handle
                    , irc :: Handle
                    , dChan :: Chan T.Text
                    , iChan :: Chan T.Text
-                   , settings :: Settings
+                   , _kevinSettings :: Settings
                    , _users :: UserStore
                    , _privclasses :: PrivclassStore
                    , _titles :: TitleStore
@@ -68,6 +68,9 @@ data Kevin = Kevin { damn :: Handle
                    }
 
 makeLenses ''Kevin
+
+instance HasSettings Kevin where
+  settings = kevinSettings
 
 type KevinS = StateT Kevin STM
 

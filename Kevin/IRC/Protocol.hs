@@ -40,7 +40,7 @@ respond pkt "JOIN" = do
     l <- gets_ (^. loggedIn)
     if l
         then mapM_ D.sendJoin rooms
-        else modify_ $ joining %~ (rooms ++)
+        else kevin $ joining %= (rooms ++)
     where
         rooms = T.splitOn "," . head . params $ pkt
 
@@ -62,7 +62,7 @@ respond pkt "MODE" = if length (params pkt) > 1
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
             _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
     else do
-        uname <- gets_ (getUsername . settings)
+        uname <- kevin $ use name
         sendChanMode uname (head $ params pkt)
 
 respond pkt "TOPIC" = case params pkt of
@@ -74,7 +74,7 @@ respond pkt "TITLE" = case params pkt of
 	[] -> sendNotice "Malformed packet"
 	[room] -> do
 		title <- gets_ $  M.lookup room . (^. titles)
-		let pre = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append pre) (T.splitOn "\n" $ fromMaybe "" title)
+		let p = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append p) (T.splitOn "\n" $ fromMaybe "" title)
 	(room:title) -> D.sendSet room "title" $ T.unwords title
 
 respond pkt "PING" = sendPong (head $ params pkt)
@@ -83,7 +83,7 @@ respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- gets_ $ getUsername . settings &&& M.lookup room . view users
+    (me,uss) <- kevin $ liftM2 (,) (use name) $ use (users.at room)
     sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
@@ -120,14 +120,20 @@ getAuthInfo handle = fix (\f authRetry -> do
     pkt <- io $ parsePacket <$> T.hGetLine handle
     io $ klogNow Yellow $ "client <- " ++ T.unpack (readable pkt)
     case command pkt of
-        "PASS" -> modify (setHasPassed . setPassword (head $ params pkt))
-        "NICK" -> modify (setHasNicked . setUsername (head $ params pkt))
-        "USER" -> modify setHasUsered
+        "PASS" -> do
+           password .= head (params pkt)
+           passed .= True
+        "NICK" -> do
+           name .= head (params pkt)
+           nicked .= True
+        "USER" -> usered .= True
         _ -> io $ klogNow Red $ "invalid packet: " ++ show pkt
     if authRetry
         then checkToken handle
         else do
-            (p,(n,u)) <- gets (hasPassed &&& hasNicked &&& hasUsered)
+            p <- use passed
+            n <- use nicked
+            u <- use usered
             if p && n && u
                 then welcome handle
                 else f False
@@ -135,7 +141,7 @@ getAuthInfo handle = fix (\f authRetry -> do
 
 welcome :: Handle -> KevinState ()
 welcome handle = do
-    nick <- gets getUsername
+    nick <- use name
     mapM_ (\x -> io $ klogNow Blue ("client -> " ++ T.unpack x) >> T.hPutStr handle (x `T.append` "\r\n")) [
         printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com" [hostname, nick, nick, nick],
         printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" [hostname, nick],
@@ -152,13 +158,12 @@ welcome handle = do
 
 checkToken :: Handle -> KevinState ()
 checkToken handle = do
-    nick <- gets getUsername
-    pass <- gets getPassword
+    s <- get
     io $ notice handle "Fetching token..."
-    tok <- io $ getToken nick pass
+    tok <- io $ getToken (s^.name) (s^.password)
     case tok of
         Just t -> do
-            modify (setAuthtoken t)
+            authtoken .= t
             io $ notice handle "Successfully authenticated."
         Nothing -> do
             io $ notice handle "Bad password, try again. (/quote pass yourpassword)"
