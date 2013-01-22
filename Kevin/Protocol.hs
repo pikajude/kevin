@@ -6,7 +6,6 @@ import Kevin.Util.Logger
 import qualified Control.Exception as E
 import qualified Kevin.IRC.Protocol as C
 import qualified Kevin.Damn.Protocol as S
-import System.IO (hSetBuffering, BufferMode(..))
 import Control.Monad.State
 import Data.Monoid (mempty)
 
@@ -19,7 +18,7 @@ mkKevin sock = flip E.catches watchInterrupt . withSocketsDo $ do
     (client, _, _) <- accept sock
     hSetBuffering client NoBuffering
     klogNow Blue "received a client"
-    set <- execStateT (C.getAuthInfo client False) emptySettings
+    s <- execStateT (C.getAuthInfo client False) emptySettings
     damnSock <- connectTo "chat.deviantart.com" $ PortNumber 3900
     hSetBuffering damnSock NoBuffering
     logChan <- newChan
@@ -29,7 +28,7 @@ mkKevin sock = flip E.catches watchInterrupt . withSocketsDo $ do
                           client
                           damnChan
                           ircChan
-                          set
+                          s
                           mempty
                           mempty
                           mempty
@@ -51,11 +50,11 @@ kevinServer n = do
             Nothing -> return ()
 
 listen :: Kevin -> IO ()
-listen kevin = do
-    mvar <- newTVarIO kevin
-    runLogger (logger kevin)
-    runPrinter (dChan kevin) (damn kevin)
-    runPrinter (iChan kevin) (irc kevin)
-    forkIO . void $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeClient kevin)) S.listen) mvar
-    forkIO . void $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeServer kevin)) C.listen) mvar
+listen k = do
+    mvar <- newTVarIO k
+    runLogger (logger k)
+    runPrinter (dChan k) (damn k)
+    runPrinter (iChan k) (irc k)
+    forkIO . void $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeClient k)) S.listen) mvar
+    forkIO . void $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeServer k)) C.listen) mvar
     return ()

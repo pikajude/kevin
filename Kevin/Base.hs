@@ -120,7 +120,11 @@ instance KevinServer Kevin where
 
 -- Kevin modifiers
 removeRoom :: Chatroom -> Kevin -> Kevin
-removeRoom c = (privclasses %~ M.delete c) . (users %~ M.delete c)
+removeRoom c k = k & privclasses.at c .~ Nothing
+                   & users.at c .~ Nothing
+
+-- removeRoom c k = k & privclasses.contains c %~ False
+--                    & users.contains c %~ False
 
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)

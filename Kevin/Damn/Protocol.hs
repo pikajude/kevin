@@ -43,15 +43,17 @@ respond _ "dAmnServer" = do
 
 respond pkt "login" = if okay pkt
     then do
-        modify_ $ loggedIn .~ True
-        gets_ (^. joining) >>= mapM_ sendJoin
+        j <- kevin $ do
+           loggedIn .= True
+           use joining
+        mapM_ sendJoin j
     else I.sendNotice $ "Login failed: " `T.append` getArg "e" pkt
 
 respond pkt "join" = do
     roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
-            modify_ $ joining %~ (roomname:)
+            kevin $ joining %= (roomname:)
             uname <- gets_ $ getUsername . settings
             I.sendJoin uname roomname
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
