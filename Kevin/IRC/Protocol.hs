@@ -62,7 +62,7 @@ respond pkt "MODE" = if length (params pkt) > 1
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
             _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
     else do
-        uname <- kevin $ use name
+        uname <- use_ name
         sendChanMode uname (head $ params pkt)
 
 respond pkt "TOPIC" = case params pkt of

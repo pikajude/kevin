@@ -38,7 +38,7 @@ formatRoom b =
     case T.splitAt 1 b of
         ("#",s) -> return $ "chat:" `T.append` s
         ("&",s) -> do
-            uname <- kevin $ use name
+            uname <- use_ name
             return . T.append "pchat:" . T.intercalate ":" . sort . map (T.map toLower) $ [uname, s]
         r -> return $ "chat" `T.append` uncurry T.append r
 
@@ -46,7 +46,7 @@ deformatRoom :: T.Text -> KevinIO T.Text
 deformatRoom room = if "chat:" `T.isPrefixOf` room
     then return $ '#' `T.cons` T.drop 5 room
     else do
-        uname <- kevin $ use name
+        uname <- use_ name
         return $ '&' `T.cons` head (filter (/= uname) . T.splitOn ":" . T.drop 6 $ room)
 
 type Str = T.Text -- just make it shorter
