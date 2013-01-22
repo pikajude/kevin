@@ -28,7 +28,7 @@ import Control.Concurrent.STM.TVar
 import Control.Monad.Reader
 import Control.Monad.STM (atomically)
 import Kevin.Settings
-import Data.Lens.Template
+import Control.Lens
 
 type Chatroom = T.Text
 
@@ -63,7 +63,7 @@ data Kevin = Kevin { damn :: Handle
                    , logger :: Chan String
                    }
 
-$( makeLens ''Kevin )
+makeLenses ''Kevin
 
 type KevinIO = ReaderT (TVar Kevin) IO
 

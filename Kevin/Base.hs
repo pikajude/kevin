@@ -50,11 +50,11 @@ import Control.Concurrent as K (forkIO)
 import Control.Concurrent.Chan as K
 import Control.Concurrent.STM.TVar as K
 import Control.Exception
+import Control.Lens as K
 import Control.Monad.CatchIO as K
 import Kevin.Settings as K
 import qualified Data.Map as M
 import Data.Typeable
-import Data.Lens.Common as K
 import Kevin.Types
 
 if' :: Bool -> a -> a -> a
@@ -120,7 +120,7 @@ instance KevinServer Kevin where
 
 -- Kevin modifiers
 removeRoom :: Chatroom -> Kevin -> Kevin
-removeRoom c = (privclasses ^%= M.delete c) . (users ^%= M.delete c)
+removeRoom c = (privclasses %~ M.delete c) . (users %~ M.delete c)
 
 addUser :: Chatroom -> User -> UserStore -> UserStore
 addUser = (. return) . M.insertWith (++)
@@ -158,7 +158,7 @@ getPcLevel :: Chatroom -> T.Text -> PrivclassStore -> Int
 getPcLevel room pcname store = fromMaybe 0 $ M.lookup room store >>= M.lookup pcname
 
 setUserPrivclass :: Chatroom -> T.Text -> T.Text -> Kevin -> Kevin
-setUserPrivclass room user pc k = (users ^%= M.adjust (mapWhen ((user ==) . username) (\u -> u {privclass = pc, privclassLevel = pclevel})) room) k
+setUserPrivclass room user pc k = (users %~ M.adjust (mapWhen ((user ==) . username) (\u -> u {privclass = pc, privclassLevel = pclevel})) room) k
     where
         pclevel = getPcLevel room pc $ k ^. privclasses
 
