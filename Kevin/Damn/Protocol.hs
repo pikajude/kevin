@@ -36,10 +36,8 @@ listen = fix (\f -> flip catches errHandlers $ do
 -- main responder
 respond :: Packet -> T.Text -> KevinIO ()
 respond _ "dAmnServer" = do
-    set <- gets_ settings
-    let uname = getUsername set
-        token = getAuthtoken set
-    sendLogin uname token
+    s <- kevin $ use settings
+    sendLogin (s^.name) (s^.authtoken)
 
 respond pkt "login" = if okay pkt
     then do
@@ -54,7 +52,7 @@ respond pkt "join" = do
     if okay pkt
         then do
             kevin $ joining %= (roomname:)
-            uname <- gets_ $ getUsername . settings
+            uname <- kevin $ use name
             I.sendJoin uname roomname
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
 
@@ -62,7 +60,7 @@ respond pkt "part" = do
     roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
-            uname <- gets_ $ getUsername . settings
+            uname <- kevin $ use name
             modify_ $ removeRoom roomname
             I.sendPart uname roomname Nothing
         else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", getArg "e" pkt]
@@ -74,13 +72,13 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
         modify_ $ privclasses %~ setPrivclasses roomname pcs
         
     "topic" -> do
-        uname <- gets_ $ getUsername . settings
+        uname <- kevin $ use name
         I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt) (getArg "ts" pkt)
         
     "title" -> modify_ $ titles %~ setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
     
     "members" -> do
-        (pcs,(uname,j)) <- gets_ $ view privclasses &&& getUsername . settings &&& view joining
+        (pcs,(uname,j)) <- gets_ $ view privclasses &&& view name &&& view joining
         let members = map (mkUser roomname pcs . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
             pc = privclass . head . filter (\x -> username x == uname) $ members
             n = nub members
@@ -92,7 +90,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
             modify_ $ joining %~ delete roomname
         
     "info" -> do
-        us <- gets_ $ getUsername . settings
+        us <- kevin $ use name
         curtime <- io $ floor <$> getPOSIXTime
         let fixedPacket = parsePacket . T.init . T.replace "\n\nusericon" "\nusericon" . readable $ pkt
             uname = T.drop 6 . fromJust . parameter $ pkt
@@ -129,13 +127,13 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     "msg" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
-        un <- gets_ $ getUsername . settings
+        un <- kevin $ use name
         unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
     
     "action" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
-        un <- gets_ $ getUsername . settings
+        un <- kevin $ use name
         unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
     
     "privchg" -> do
@@ -174,7 +172,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
                 
 respond pkt "kicked" = do
     roomname <- deformatRoom (fromJust $ parameter pkt)
-    uname <- gets_ $ getUsername . settings
+    uname <- kevin $ use name
     modify_ $ removeRoom roomname
     I.sendKick uname (getArg "by" pkt) roomname $ case body pkt of {Just "" -> Nothing; x -> x}
 
