@@ -62,7 +62,7 @@ respond pkt "MODE" = if length (params pkt) > 1
             "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
             _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
     else do
-        uname <- kevin $ use name
+        uname <- use_ name
         sendChanMode uname (head $ params pkt)
 
 respond pkt "TOPIC" = case params pkt of
@@ -83,8 +83,8 @@ respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- kevin $ liftM2 (,) (use name) $ use (users.at room)
-    sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
+    k <- get_
+    sendUserList (k^.name) (nubBy ((==) `on` username) (k^.users.ix room)) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
 
