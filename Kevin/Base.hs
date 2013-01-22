@@ -40,7 +40,8 @@ import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text.Encoding as T
 import Data.List (intercalate, findIndices)
 import Data.Maybe
-import System.IO as K (Handle, hClose, hIsClosed, hGetChar)
+import System.IO as K
+import System.IO.Error
 import Control.Exception as K (IOException)
 import Network as K
 import Control.Applicative ((<$>))
@@ -48,6 +49,7 @@ import Control.Monad.Reader as K
 import Control.Concurrent as K (forkIO)
 import Control.Concurrent.Chan as K
 import Control.Concurrent.STM.TVar as K
+import Control.Exception
 import Control.Monad.CatchIO as K
 import Kevin.Settings as K
 import qualified Data.Map as M
@@ -83,8 +85,18 @@ instance Exception KevinException
 padLines :: Int -> T.Text -> String
 padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") . intercalate "\n" . map (replicate len ' ' ++) $ rest
 
+hGetCharTimeout :: Handle -> Int -> IO Char
+hGetCharTimeout h t = do
+    hSetBuffering h NoBuffering
+    ready <- hWaitForInput h t
+    if ready
+        then do
+            c <- hGetChar h
+            return c
+        else throwIO $ mkIOError eofErrorType "read timeout" (Just h) Nothing
+
 hGetSep :: Char -> Handle -> IO String
-hGetSep sep h = fix (\f -> hGetChar h >>= \ch -> if ch == sep then return "" else (ch:) <$> f)
+hGetSep sep h = fix (\f -> hGetCharTimeout h 90000 >>= \ch -> if ch == sep then return "" else (ch:) <$> f)
 
 instance KevinServer Kevin where
     readClient k = do
