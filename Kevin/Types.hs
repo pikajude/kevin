@@ -10,6 +10,7 @@ module Kevin.Types (
     UserStore,
     TitleStore,
     kevin,
+    use_,
     get_,
     gets_,
     put_,
@@ -82,6 +83,9 @@ kevin m = ask >>= \v -> liftIO $ atomically $ do
   return a
 
 type KevinIO = ReaderT (TVar Kevin) IO
+
+use_ :: Getting a Kevin t a b -> KevinIO a
+use_ = gets_ . view
 
 get_ :: KevinIO Kevin
 get_ = ask >>= liftIO . readTVarIO
