@@ -1,6 +1,7 @@
 module Kevin.Types (
     Kevin(Kevin),
     KevinIO,
+    KevinS,
     Privclass,
     Chatroom,
     User(..),
@@ -8,6 +9,7 @@ module Kevin.Types (
     PrivclassStore,
     UserStore,
     TitleStore,
+    kevin,
     get_,
     gets_,
     put_,
@@ -25,8 +27,10 @@ import qualified Data.Map as M
 import System.IO
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
+import Control.Monad.Trans
 import Control.Monad.Reader
-import Control.Monad.STM (atomically)
+import Control.Monad.State
+import Control.Monad.STM (STM, atomically)
 import Kevin.Settings
 import Control.Lens
 
@@ -64,6 +68,15 @@ data Kevin = Kevin { damn :: Handle
                    }
 
 makeLenses ''Kevin
+
+type KevinS = StateT Kevin STM
+
+kevin :: KevinS a -> KevinIO a
+kevin m = ask >>= \v -> liftIO $ atomically $ do
+  s <- readTVar v
+  (a, t) <- runStateT m s
+  writeTVar v t
+  return a
 
 type KevinIO = ReaderT (TVar Kevin) IO
 
