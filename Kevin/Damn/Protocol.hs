@@ -36,7 +36,7 @@ listen = fix (\f -> flip catches errHandlers $ do
 -- main responder
 respond :: Packet -> T.Text -> KevinIO ()
 respond _ "dAmnServer" = do
-    s <- kevin $ use settings
+    s <- use_ settings
     sendLogin (s^.name) (s^.authtoken)
 
 respond pkt "login" = if okay pkt
@@ -52,7 +52,7 @@ respond pkt "join" = do
     if okay pkt
         then do
             kevin $ joining %= (roomname:)
-            uname <- kevin $ use name
+            uname <- use_ name
             I.sendJoin uname roomname
         else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", getArg "e" pkt]
 
@@ -60,7 +60,7 @@ respond pkt "part" = do
     roomname <- deformatRoom . fromJust . parameter $ pkt
     if okay pkt
         then do
-            uname <- kevin $ use name
+            uname <- use_ name
             modify_ $ removeRoom roomname
             I.sendPart uname roomname Nothing
         else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", getArg "e" pkt]
@@ -72,7 +72,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
         modify_ $ privclasses %~ setPrivclasses roomname pcs
 
     "topic" -> do
-        uname <- kevin $ use name
+        uname <- use_ name
         I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt) (getArg "ts" pkt)
 
     "title" -> modify_ $ titles %~ setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
@@ -90,7 +90,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
             modify_ $ joining %~ delete roomname
 
     "info" -> do
-        us <- kevin $ use name
+        us <- use_ name
         curtime <- io $ floor <$> getPOSIXTime
         let fixedPacket = parsePacket . T.init . T.replace "\n\nusericon" "\nusericon" . readable $ pkt
             uname = T.drop 6 . fromJust . parameter $ pkt
@@ -127,13 +127,13 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
     "msg" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
-        un <- kevin $ use name
+        un <- use_ name
         unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
 
     "action" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
-        un <- kevin $ use name
+        un <- use_ name
         unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
 
     "privchg" -> do
@@ -172,7 +172,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
 
 respond pkt "kicked" = do
     roomname <- deformatRoom (fromJust $ parameter pkt)
-    uname <- kevin $ use name
+    uname <- use_ name
     modify_ $ removeRoom roomname
     I.sendKick uname (getArg "by" pkt) roomname $ case body pkt of {Just "" -> Nothing; x -> x}
 
