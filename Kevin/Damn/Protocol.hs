@@ -78,15 +78,15 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
     "title" -> modify_ $ titles %~ setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
 
     "members" -> do
-        (pcs,(uname,j)) <- gets_ $ view privclasses &&& view name &&& view joining
-        let members = map (mkUser roomname pcs . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
-            pc = privclass . head . filter (\x -> username x == uname) $ members
+        k <- get_
+        let members = map (mkUser roomname (k^.privclasses) . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
+            pc = privclass . head . filter (\x -> username x == k^.name) $ members
             n = nub members
         modify_ $ users %~ setUsers roomname members
-        when (roomname `elem` j) $ do
-            I.sendUserList uname n roomname
-            I.sendWhoList uname n roomname
-            I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
+        when (roomname `elem` k^.joining) $ do
+            I.sendUserList (k^.name) n roomname
+            I.sendWhoList (k^.name) n roomname
+            I.sendSetUserMode (k^.name) roomname $ getPcLevel roomname pc (k^.privclasses)
             modify_ $ joining %~ delete roomname
 
     "info" -> do
