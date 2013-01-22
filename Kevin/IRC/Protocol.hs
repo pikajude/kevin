@@ -83,8 +83,8 @@ respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
 
 respond pkt "NAMES" = do
     let (room:_) = params pkt
-    (me,uss) <- kevin $ liftM2 (,) (use name) $ use (users.at room)
-    sendUserList me (nubBy ((==) `on` username) $ fromMaybe [] uss) room
+    k <- get_
+    sendUserList (k^.name) (nubBy ((==) `on` username) (k^.users.ix room)) room
 
 respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
 
