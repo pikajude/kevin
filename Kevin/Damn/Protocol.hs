@@ -70,13 +70,13 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
     "privclasses" -> do
         let pcs = parsePrivclasses . fromJust . body $ pkt
         modify_ $ privclasses %~ setPrivclasses roomname pcs
-        
+
     "topic" -> do
         uname <- kevin $ use name
         I.sendTopic uname roomname (getArg "by" pkt) (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt) (getArg "ts" pkt)
-        
+
     "title" -> modify_ $ titles %~ setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode . fromJust . body $ pkt)
-    
+
     "members" -> do
         (pcs,(uname,j)) <- gets_ $ view privclasses &&& view name &&& view joining
         let members = map (mkUser roomname pcs . parsePacket) . init . splitOn "\n\n" . fromJust $ body pkt
@@ -88,7 +88,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
             I.sendWhoList uname n roomname
             I.sendSetUserMode uname roomname $ getPcLevel roomname pc pcs
             modify_ $ joining %~ delete roomname
-        
+
     "info" -> do
         us <- kevin $ use name
         curtime <- io $ floor <$> getPOSIXTime
@@ -100,7 +100,7 @@ respond pkt "property" = deformatRoom (fromJust $ parameter pkt) >>= \roomname -
             (onlinespan,idle) = head . sortBy (comparing fst) . map (\(a,b,_) -> (a,b)) $ conns
             signon = curtime - onlinespan
         I.sendWhoisReply us uname (entityDecode rn) allRooms idle signon
-    
+
     q -> klogError $ "Unrecognized property " ++ T.unpack q
 
 respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
@@ -115,7 +115,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
                 I.sendJoin usname roomname
                 I.sendSetUserMode usname roomname $ getPcLevel roomname (getArg "pc" modifiedPkt) pcs
             else I.sendNoticeClone (username us) (succ countUser) roomname
-    
+
     "part" -> do
         let uname = fromJust $ parameter pkt
         modify_ $ users %~ removeUser roomname uname
@@ -123,19 +123,19 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         if countUser < 1
             then I.sendPart uname roomname $ case getArg "r" pkt of { "" -> Nothing; x -> Just x }
             else I.sendNoticeUnclone uname countUser roomname
-            
+
     "msg" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
         un <- kevin $ use name
         unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
-    
+
     "action" -> do
         let uname = arg "from"
             msg   = fromJust (body pkt)
         un <- kevin $ use name
         unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
-    
+
     "privchg" -> do
         (pcs,us) <- gets_ $ view privclasses &&& view users
         let user = fromJust $ parameter pkt
@@ -152,7 +152,7 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         let uname = fromJust $ parameter pkt
         modify_ $ users %~ removeUserAll roomname uname
         I.sendKick uname (arg "by") roomname $ case body pkt of {Just "" -> Nothing; x -> x}
-            
+
     "admin" -> case fromJust $ parameter pkt of
         "create" -> I.sendRoomNotice roomname $ T.concat ["Privclass ", arg "name", " created by ", arg "by", " with: ", arg "privs"]
         "update" -> I.sendRoomNotice roomname $ T.concat ["Privclass ", arg "name", " updated by ", arg "by", " with: ", arg "privs"]
@@ -162,14 +162,14 @@ respond spk "recv" = deformatRoom (fromJust $ parameter spk) >>= \roomname ->
         "show"   -> mapM_ (I.sendRoomNotice roomname) . T.splitOn "\n" . fromJust . body $ pkt
         "privclass" -> I.sendRoomNotice roomname $ "Admin error: " `T.append` arg "e"
         q -> klogError $ "Unknown admin packet type " ++ show q
-    
+
     x -> klogError $ "Unknown packet type " ++ show x
-    
+
     where
         pkt = fromJust $ subPacket spk
         modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" (fromJust $ body spk))
         arg = flip getArg pkt
-                
+
 respond pkt "kicked" = do
     roomname <- deformatRoom (fromJust $ parameter pkt)
     uname <- kevin $ use name

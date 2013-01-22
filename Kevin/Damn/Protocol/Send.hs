@@ -2,7 +2,7 @@ module Kevin.Damn.Protocol.Send (
     sendPacket,
     formatRoom,
     deformatRoom,
-    
+
     sendHandshake,
     sendLogin,
     sendJoin,
@@ -34,7 +34,7 @@ sendPacket :: T.Text -> KevinIO ()
 sendPacket p = get_ >>= \k -> io . writeServer k . T.snoc p $ '\0'
 
 formatRoom :: T.Text -> KevinIO T.Text
-formatRoom b = 
+formatRoom b =
     case T.splitAt 1 b of
         ("#",s) -> return $ "chat:" `T.append` s
         ("&",s) -> do
