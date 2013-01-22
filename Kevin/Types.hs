@@ -14,14 +14,14 @@ module Kevin.Types (
     gets_,
     put_,
     modify_,
-    
+
     -- lenses
     users, privclasses, titles, joining, loggedIn,
-    
+
     -- other accessors
     damn, irc, dChan, iChan, settings, logger
 ) where
-    
+
 import qualified Data.Text as T
 import qualified Data.Map as M
 import System.IO

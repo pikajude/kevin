@@ -3,34 +3,34 @@ module Kevin.Base (
     KevinException(..),
     KevinServer(..),
     User(..),
-    
+
     -- * Modifiers
     addUser,
     removeUser,
     removeUserAll,
     setUsers,
     numUsers,
-    
+
     addPrivclass,
     setPrivclasses,
     getPcLevel,
     getPc,
     setUserPrivclass,
     changePrivclassName,
-    
+
     removeRoom,
-    
+
     setTitle,
-    
+
     -- * Exports
     module K,
-    
+
     -- * Working with KevinState
     io,
     runPrinter,
-    
+
     if',
-    
+
     printf
 ) where
 
@@ -81,7 +81,7 @@ data KevinException = ParseFailure
 instance Exception KevinException
 
 -- actions
-                   
+
 padLines :: Int -> T.Text -> String
 padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") . intercalate "\n" . map (replicate len ' ' ++) $ rest
 
@@ -107,14 +107,14 @@ instance KevinServer Kevin where
         line <- T.pack <$> hGetSep '\NUL' (damn k)
         klog_ (logger k) Cyan $ "server <- " ++ padLines 10 line
         return line
-    
+
     writeClient k pkt = do
         klog_ (logger k) Blue $ "client -> " ++ padLines 10 pkt
         writeChan (iChan k) pkt
     writeServer k pkt = do
         klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
         writeChan (dChan k) pkt
-    
+
     closeClient = hClose . irc
     closeServer = hClose . damn
 
