@@ -17,7 +17,7 @@ module Kevin.IRC.Protocol.Send (
     sendNoticeUnclone,
     sendWhoisReply
 ) where
-    
+
 import Kevin.Base
 import qualified Data.Text as T
 
@@ -102,7 +102,7 @@ sendChanMode us rm = do
     sendPacket $ printf "%s 329 %s %s 767529000" [hostname, us, rm]
 
 sendUserList us uss rm = do
-    mapM_ (\nms -> 
+    mapM_ (\nms ->
         sendPacket $ printf "%s 353 %s = %s :%s" [hostname, us, rm, T.unwords nms]) chunkedNames
     sendPacket $ printf "%s 366 %s %s :End of NAMES list." [hostname, us, rm]
     where
