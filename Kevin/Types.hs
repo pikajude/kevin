@@ -1,5 +1,5 @@
 module Kevin.Types (
-    Kevin(Kevin),
+    Kevin(Kevin, damn, irc, dChan, iChan, logger),
     KevinIO,
     KevinS,
     Privclass,
@@ -13,14 +13,14 @@ module Kevin.Types (
     use_,
     get_,
     gets_,
-    put_,
-    modify_,
 
     -- lenses
     users, privclasses, titles, joining, loggedIn,
 
     -- other accessors
-    damn, irc, dChan, iChan, settings, logger
+    settings,
+    
+    if'
 ) where
 
 import qualified Data.Text as T
@@ -34,6 +34,9 @@ import Control.Monad.State
 import Control.Monad.STM (STM, atomically)
 import Kevin.Settings
 import Control.Lens
+
+if' :: Bool -> a -> a -> a
+if' x y z = if x then y else z
 
 type Chatroom = T.Text
 
@@ -90,16 +93,5 @@ use_ = gets_ . view
 get_ :: KevinIO Kevin
 get_ = ask >>= liftIO . readTVarIO
 
-put_ :: Kevin -> KevinIO ()
-put_ k = ask >>= io . atomically . flip writeTVar k
-
 gets_ :: (Kevin -> a) -> KevinIO a
 gets_ = flip liftM get_
-
-modify_ :: (Kevin -> Kevin) -> KevinIO ()
-modify_ f = do
-    var <- ask
-    io . atomically $ modifyTVar var f
-
-io :: MonadIO m => IO a -> m a
-io = liftIO
