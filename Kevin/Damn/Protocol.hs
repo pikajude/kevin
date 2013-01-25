@@ -17,6 +17,7 @@ import Data.Ord (comparing)
 import Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
 import Control.Applicative ((<$>))
+import Control.Exception.Lens
 import Data.Time.Clock.POSIX (getPOSIXTime)
 
 initialize :: KevinIO ()
@@ -195,5 +196,5 @@ mkUser room st p = User (fromJust $ parameter p)
         g = flip getArg p
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [Handler (\(_ :: KevinException) -> klogError "Malformed communication from server"),
-               Handler (\(e :: IOException) -> klogError $ "server: " ++ show e)]
+errHandlers = [ handled_ _KevinException $ klogError "Malformed communication from server"
+              , handled _IOException (\e -> klogError $ "server: " ++ show e) ]
