@@ -16,6 +16,7 @@ import qualified Kevin.Damn.Protocol.Send as D
 import Kevin.IRC.Protocol.Send
 import Control.Applicative ((<$>))
 import Control.Arrow
+import Control.Exception.Lens
 import Control.Monad.State
 import Data.Maybe
 import Data.List (nubBy)
@@ -106,8 +107,8 @@ unmask y = case T.split (`elem` "@!") y of
     xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [Handler (\(_ :: KevinException) -> klogError "Bad communication from client"),
-               Handler (\(e :: IOException) -> klogError $ "client: " ++ show e)]
+errHandlers = [ handled_ _KevinException $ klogError "Bad communication from client"
+              , handled _IOException (\e -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
 notice :: Handle -> T.Text -> IO ()

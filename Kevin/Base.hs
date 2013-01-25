@@ -1,6 +1,7 @@
 module Kevin.Base (
     module Kevin.Types,
     KevinException(..),
+    _KevinException,
     KevinServer(..),
     User(..),
 
@@ -20,6 +21,7 @@ import Data.List (intercalate)
 import System.IO as K
 import System.IO.Error
 import Control.Exception as K (IOException)
+import Control.Exception.Lens
 import Network as K
 import Control.Applicative ((<$>))
 import Control.Monad.Reader as K
@@ -50,6 +52,9 @@ data KevinException = ParseFailure
     deriving (Show, Typeable)
 
 instance Exception KevinException
+
+_KevinException :: Prism' SomeException KevinException
+_KevinException = exception
 
 -- actions
 

@@ -3,18 +3,18 @@ module Kevin.Protocol (kevinServer) where
 import Prelude hiding (catch)
 import Kevin.Base
 import Kevin.Util.Logger
-import qualified Control.Exception as E
+import Control.Exception.Lens
 import qualified Kevin.IRC.Protocol as C
 import qualified Kevin.Damn.Protocol as S
 import Control.Monad.State
 import Data.Monoid (mempty)
 
-watchInterrupt :: [E.Handler (Maybe Kevin)]
-watchInterrupt = [E.Handler (\(e :: E.AsyncException) -> throw e),
-                  E.Handler (\(_ :: E.SomeException) -> return Nothing)]
+watchInterrupt :: [Handler IO (Maybe Kevin)]
+watchInterrupt = [ handled _AsyncException throw
+                 , handled_ id (return Nothing) ]
 
 mkKevin :: Socket -> IO (Maybe Kevin)
-mkKevin sock = flip E.catches watchInterrupt . withSocketsDo $ do
+mkKevin sock = flip catches watchInterrupt . withSocketsDo $ do
     (client, _, _) <- accept sock
     hSetBuffering client NoBuffering
     klogNow Blue "received a client"
