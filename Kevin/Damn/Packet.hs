@@ -1,30 +1,45 @@
 module Kevin.Damn.Packet (
     Packet(..),
+    command, parameter, args, body,
+    
     parsePacket,
     parsePrivclasses,
     subPacket,
     fixLoginPacket,
     okay,
-    getArg,
-    splitOn,
-    readable
+    readable,
+    null_,
+    notNull_
 ) where
 
-import Kevin.Base (KevinException(..), Privclass)
+import Control.Applicative (many, (<$>), (<$))
 import Control.Exception (throw)
-import qualified Data.Text as T
+import Control.Lens
+import Control.Monad (guard, liftM2)
 import Data.Attoparsec.Text
 import Data.Char
-import Control.Applicative (many, (<$>))
-import Control.Monad (liftM2)
-import Control.Monad.Fix
+import qualified Data.Map as M
 import Data.Maybe
+import Data.Monoid
+import qualified Data.Text as T
+import Kevin.Base (KevinException(..), Privclass)
 
-data Packet = Packet { command :: T.Text
-                     , parameter :: Maybe T.Text
-                     , args :: [(T.Text,T.Text)]
-                     , body :: Maybe T.Text
-                     } deriving (Show)
+toMaybe :: (a -> Bool) -> a -> Maybe a
+toMaybe f x = x <$ guard (f x)
+
+notNull_ :: Prism' T.Text T.Text
+notNull_ = prism' id $ toMaybe (not . T.null)
+
+null_ :: Prism' T.Text T.Text
+null_ = prism' id $ toMaybe T.null
+
+data Packet = Packet { _command     :: T.Text
+                     , _parameter   :: Maybe T.Text
+                     , _args        :: M.Map T.Text T.Text
+                     , _body        :: Maybe T.Text
+                     } deriving Show
+
+makeLenses ''Packet
 
 parseCommand :: Parser T.Text
 parseCommand = takeWhile1 (not . isSpace)
@@ -35,8 +50,8 @@ parseParam = do
     parm <- takeWhile1 (not . isSpace)
     return $ Just parm
 
-parseArgs :: Parser [(T.Text,T.Text)]
-parseArgs = many $ do
+parseArgs :: Parser (M.Map T.Text T.Text)
+parseArgs = (M.fromList <$>) . many $ do
     char '\n'
     c <- takeTill (=='=')
     char '='
@@ -51,37 +66,39 @@ parseHead = do
     return $ Packet c p a Nothing
 
 parsePacket :: T.Text -> Packet
-parsePacket pack = let (top,b) = T.breakOn "\n\n" pack in case (\x -> (x { body = if T.null b then Nothing else Just $ T.drop 2 b }) :: Packet) <$> parseOnly parseHead top of
+parsePacket pack = case parseOnly parseHead top of
     Left _ -> throw ParseFailure
-    Right pkt -> pkt
+    Right res -> res & body .~ (T.drop 2 <$> toMaybe T.null b)
+    where
+        (top, b) = T.breakOn "\n\n" pack
 
 getResult :: Either String a -> a
-getResult (Right x) = x
-getResult (Left _) = error "getResult"
+getResult x = let Right e = x in e
 
 fixLoginPacket :: Packet -> Packet
-fixLoginPacket pkt = if command pkt == "login"
-    then pkt { args = args pkt ++ getResult (parseOnly parseArgs . T.cons '\n' . fromJust . body $ pkt), body = Nothing }
+fixLoginPacket pkt = if pkt^.command == "login"
+    then pkt & args %~ (<> getResult
+        (parseOnly parseArgs . T.cons '\n' . fromJust $ pkt^.body))
     else pkt
 
 subPacket :: Packet -> Maybe Packet
-subPacket = (parsePacket <$>) . body
+subPacket = (parsePacket <$>) . view body
 
 okay :: Packet -> Bool
-okay (Packet _ _ a _) = let e = lookup "e" a in isNothing e || e == Just "ok"
-
-getArg :: T.Text -> Packet -> T.Text
-getArg b p = fromMaybe "" $ lookup b (args p)
+okay (Packet _ _ a _) = let e = a ^. at "e" in isNothing e || e == Just "ok"
 
 parsePrivclasses :: T.Text -> [Privclass]
-parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . (!! 0)) . T.splitOn ":") . filter (not . T.null) . T.splitOn "\n"
-
-splitOn :: T.Text -> T.Text -> [T.Text]
-splitOn delim = fix (\rec s -> let (f,l) = T.breakOn delim s in if T.null l then [f] else f:rec (T.drop (T.length delim) l))
+parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . head) . T.splitOn ":") 
+                 . filter (not . T.null)
+                 . T.splitOn "\n"
 
 readable :: Packet -> T.Text
-readable (Packet cmd param arg bod) = cmd +++ maybe "" (' ' `T.cons`) param +++ formattedArgs arg +++ maybe "" ("\n\n" `T.append`) bod +++ "\n\0"
+readable (Packet cmd param arg bod) = cmd
+                                   <> maybe "" (' ' `T.cons`) param
+                                   <> formattedArgs (M.toList arg)
+                                   <> maybe "" ("\n\n" `T.append`) bod
+                                   <> "\n\0"
     where
-        (+++) = T.append
         formattedArgs [] = ""
-        formattedArgs q = T.append "\n" . T.intercalate "\n" . map (uncurry (\x y -> x +++ "=" +++ y)) $ q
+        formattedArgs q = T.append "\n" . T.intercalate "\n"
+                        . map (uncurry (\x y -> x <> "=" <> y)) $ q
