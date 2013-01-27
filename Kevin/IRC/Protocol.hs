@@ -117,8 +117,8 @@ unmask y = case T.split (`elem` "@!") y of
     xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [ handled_ _KevinException $ klogError "Bad communication from client"
-              , handled _IOException (\e -> klogError $ "client: " ++ show e)]
+errHandlers = [ handler_ _KevinException $ klogError "Bad communication from client"
+              , handler _IOException (\e -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
 notice :: Handle -> T.Text -> IO ()

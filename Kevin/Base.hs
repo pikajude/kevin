@@ -13,31 +13,31 @@ module Kevin.Base (
     printf
 ) where
 
-import Kevin.Util.Logger
-import qualified Data.Text as T
-import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
-import qualified Data.Text.Encoding as T
-import Data.List (intercalate)
-import System.IO as K
-import System.IO.Error
-import Control.Exception as K (IOException)
-import Control.Exception.Lens
-import Network as K
 import Control.Applicative ((<$>))
-import Control.Monad.Reader as K
 import Control.Concurrent as K (forkIO)
 import Control.Concurrent.Chan as K
 import Control.Concurrent.STM.TVar as K
 import Control.Exception
+import Control.Exception as K (IOException)
+import Control.Exception.Lens
 import Control.Lens as K
 import Control.Monad.CatchIO as K
-import Kevin.Settings as K
-import Kevin.Chatrooms as K
+import Control.Monad.Reader as K
+import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
+import Data.List (intercalate)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import Data.Typeable
+import Kevin.Chatrooms as K
+import Kevin.Settings as K
 import Kevin.Types
+import Kevin.Util.Logger
+import Network as K
+import System.IO as K
+import System.IO.Error
 
 runPrinter :: Chan T.Text -> Handle -> IO ()
-runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h . T.encodeUtf8
+runPrinter ch h = void . forkIO . forever $ readChan ch >>= T.hPutStr h . T.encodeUtf8
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
@@ -59,7 +59,10 @@ _KevinException = exception
 -- actions
 
 padLines :: Int -> T.Text -> String
-padLines len b = let (first:rest) = lines $ T.unpack b in (++) (first ++ "\n") . intercalate "\n" . map (replicate len ' ' ++) $ rest
+padLines len b = let (first:rest) = lines $ T.unpack b
+                  in (++) (first ++ "\n") . intercalate "\n"
+                          . map (replicate len ' ' ++)
+                        $ rest
 
 hGetCharTimeout :: Handle -> Int -> IO Char
 hGetCharTimeout h t = do
@@ -72,7 +75,11 @@ hGetCharTimeout h t = do
         else throwIO $ mkIOError eofErrorType "read timeout" (Just h) Nothing
 
 hGetSep :: Char -> Handle -> IO String
-hGetSep sep h = fix (\f -> hGetCharTimeout h 180000 >>= \ch -> if ch == sep then return "" else (ch:) <$> f)
+hGetSep sep h = fix (\f -> do
+    ch <- hGetCharTimeout h 180000
+    if ch == sep
+        then return ""
+        else (ch:) <$> f)
 
 instance KevinServer Kevin where
     readClient k = do

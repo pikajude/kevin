@@ -17,8 +17,8 @@ module Kevin.IRC.Protocol.Send (
     sendWhoisReply
 ) where
 
-import Kevin.Base
 import qualified Data.Text as T
+import Kevin.Base
 
 hostname :: T.Text
 hostname = ":chat.deviantart.com"

@@ -3,15 +3,15 @@ module Kevin.Util.Entity (
     entityDecode
 ) where
 
-import Prelude hiding (take)
-import qualified Data.Text as T
-import Data.Attoparsec.Text
-import Data.Char
-import qualified Data.Text.Read as R
+import Control.Applicative ((<|>), (<$>), (<*>))
 import Control.Monad (guard)
 import Control.Monad.Fix
-import Control.Applicative ((<|>), (<$>), (<*>))
+import Data.Attoparsec.Text
+import Data.Char
 import Data.Maybe
+import qualified Data.Text as T
+import qualified Data.Text.Read as R
+import Prelude hiding (take)
 
 decodeCharacter :: Parser T.Text
 decodeCharacter = entityNumeric <|> entityNamed <|> take 1
@@ -21,7 +21,10 @@ entityNumeric = do
     string "&#"
     entity <- T.append <$> option "" (string "x") <*> takeWhile1 isHexDigit
     char ';'
-    return $ fromMaybe (T.concat ["&#", entity, ";"]) $ (if "x" `T.isPrefixOf` entity then lookupHexEntity else lookupNumericEntity) entity
+    return . fromMaybe (T.concat ["&#", entity, ";"])
+           $ (if "x" `T.isPrefixOf` entity 
+               then lookupHexEntity
+               else lookupNumericEntity) entity
 
 entityNamed :: Parser T.Text
 entityNamed = do

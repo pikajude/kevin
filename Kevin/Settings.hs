@@ -1,7 +1,7 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Kevin.Settings where
 
 import Control.Lens
+import Data.Default
 import Data.Text
 
 data Settings = Settings { _name      :: Text
@@ -14,5 +14,5 @@ data Settings = Settings { _name      :: Text
 
 makeClassy ''Settings
 
-emptySettings :: Settings
-emptySettings = Settings "" "" "" False False False
+instance Default Settings where
+    def = Settings "" "" "" False False False

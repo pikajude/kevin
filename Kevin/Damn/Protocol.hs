@@ -229,5 +229,5 @@ mkUser room st p = User (p^.parameter._Just)
         g s = p^.args.ix s
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [ handled_ _KevinException $ klogError "Malformed communication from server"
-              , handled _IOException (\e -> klogError $ "server: " ++ show e) ]
+errHandlers = [ handler_ _KevinException $ klogError "Malformed communication from server"
+              , handler _IOException (\e -> klogError $ "server: " ++ show e) ]

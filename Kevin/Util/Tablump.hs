@@ -4,13 +4,13 @@ module Kevin.Util.Tablump (
     tablumpDecode
 ) where
 
-import Text.Regex.PCRE
-import Text.Regex.PCRE.String
-import Text.Printf
 import Control.Arrow
 import Control.Monad.Fix
-import System.IO.Unsafe
 import qualified Data.Text as T
+import System.IO.Unsafe
+import Text.Printf
+import Text.Regex.PCRE
+import Text.Regex.PCRE.String
 
 fromRight :: (Show a) => Either a b -> b
 fromRight (Left x) = error $ "fromRight on Left " ++ show x
