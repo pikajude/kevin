@@ -1,5 +1,5 @@
 Name:             kevin
-Version:          0.6.1
+Version:          0.7
 Synopsis:         a dAmn ↔ IRC proxy
 Description:      a dAmn ↔ IRC proxy
 License:          GPL
@@ -56,4 +56,4 @@ Executable kevin
                 
     default-extensions: CPP, DeriveDataTypeable, ExistentialQuantification, FlexibleContexts, OverloadedStrings, ScopedTypeVariables, TemplateHaskell
     ghc-options:        -Wall -fno-warn-unused-do-bind -threaded
-    cpp-options:        -DVERSION="0.6.1"
+    cpp-options:        -DVERSION="0.7"
