@@ -9,6 +9,7 @@ import Control.Monad.Fix
 import Data.Attoparsec.Text
 import Data.Char
 import Data.Maybe
+import Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Read as R
 import Prelude hiding (take)
@@ -19,7 +20,7 @@ decodeCharacter = entityNumeric <|> entityNamed <|> take 1
 entityNumeric :: Parser T.Text
 entityNumeric = do
     string "&#"
-    entity <- T.append <$> option "" (string "x") <*> takeWhile1 isHexDigit
+    entity <- (<>) <$> option "" (string "x") <*> takeWhile1 isHexDigit
     char ';'
     return . fromMaybe (T.concat ["&#", entity, ";"])
            $ (if "x" `T.isPrefixOf` entity 

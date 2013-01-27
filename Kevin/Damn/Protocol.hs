@@ -104,7 +104,7 @@ respond pkt "property" = do
                 uname = T.drop 6 $ pkt^.parameter._Just
                 rn = fixedPacket^.args.ix "realname"
                 conns = map (\pk ->
-                    let x = parsePacket . T.append "conn" $ pk
+                    let x = parsePacket $ "conn" <> pk
                     in ( read (T.unpack $ x^.args.ix "online") :: Int
                        , read (T.unpack $ x^.args.ix "idle") :: Int
                        , map (T.drop 8) . filter (not . T.null)
@@ -164,7 +164,7 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
         setUserPrivclass roomname user newPc
         I.sendRoomNotice roomname $ T.concat
             [user, " has been moved"
-            , maybe "" (T.append " from ") oldPc
+            , maybe "" (" from " <>) oldPc
             , " to ", newPc, " by ", by
             ]
         I.sendChangeUserMode user roomname oldPcLevel newPcLevel
@@ -194,7 +194,7 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
         "remove" -> I.sendRoomNotice roomname $
             T.concat ["Privclass", arg "name", " removed by ", arg "by"]
         "show"   -> mapM_ (I.sendRoomNotice roomname) . T.splitOn "\n" $ pkt^.body._Just
-        "privclass" -> I.sendRoomNotice roomname $ "Admin error: " `T.append` arg "e"
+        "privclass" -> I.sendRoomNotice roomname $ "Admin error: " <> arg "e"
         q -> klogError $ "Unknown admin packet type " ++ show q
 
     x -> klogError $ "Unknown packet type " ++ show x

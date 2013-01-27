@@ -96,9 +96,9 @@ readable :: Packet -> T.Text
 readable (Packet cmd param arg bod) = cmd
                                    <> maybe "" (' ' `T.cons`) param
                                    <> formattedArgs (M.toList arg)
-                                   <> maybe "" ("\n\n" `T.append`) bod
+                                   <> maybe "" ("\n\n" <>) bod
                                    <> "\n\0"
     where
         formattedArgs [] = ""
-        formattedArgs q = T.append "\n" . T.intercalate "\n"
+        formattedArgs q = ("\n" <>) . T.intercalate "\n"
                         . map (uncurry (\x y -> x <> "=" <> y)) $ q

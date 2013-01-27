@@ -7,6 +7,7 @@ import Crypto.Random.AESCtr (makeSystem)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List
+import Data.Monoid
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Base
@@ -19,7 +20,7 @@ recvUntil ctx str = do
     line <- recvData ctx
     if str `B.isInfixOf` line
         then return line
-        else fmap (line `B.append`) $ recvUntil ctx str
+        else fmap (line <>) $ recvUntil ctx str
 
 concatHeaders :: [(String,String)] -> String
 concatHeaders = intercalate "\r\n" . map (\(x,y) -> x ++ ": " ++ y)

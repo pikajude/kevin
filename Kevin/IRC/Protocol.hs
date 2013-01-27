@@ -11,7 +11,6 @@ import Control.Exception.Lens
 import Control.Monad.State
 import Data.Function (on)
 import Data.List (nubBy)
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
@@ -74,16 +73,17 @@ respond pkt "MODE" = if length (pkt^.params) > 1
         sendChanMode uname (pkt^.params._head)
 
 respond pkt "TOPIC" = case pkt^.params of
-	[] -> sendNotice "Malformed packet"
-	[room] -> D.sendGet room "topic"
-	(room:topic:_) -> D.sendSet room "topic" topic
+    [] -> sendNotice "Malformed packet"
+    [room] -> D.sendGet room "topic"
+    (room:topic:_) -> D.sendSet room "topic" topic
 
 respond pkt "TITLE" = case pkt^.params of
-	[] -> sendNotice "Malformed packet"
-	[room] -> do
-		title <- gets_ $  M.lookup room . (^. titles)
-		let p = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append p) (T.splitOn "\n" $ fromMaybe "" title)
-	(room:title) -> D.sendSet room "title" $ T.unwords title
+    [] -> sendNotice "Malformed packet"
+    [room] -> do
+        title <- gets_ . view $ titles.ix room
+        let p = T.concat ["Title for ", room, ": "]
+        mapM_ (sendRoomNotice room . (p <>)) (T.splitOn "\n" title)
+    (room:title) -> D.sendSet room "title" $ T.unwords title
 
 respond pkt "PING" = sendPong $ pkt^.params._head
 
@@ -122,7 +122,9 @@ errHandlers = [ handler_ _KevinException $ klogError "Bad communication from cli
 
 -- * Authentication-getting function
 notice :: Handle -> T.Text -> IO ()
-notice h str = klogNow Blue ("client -> " ++ T.unpack asStr) >> T.hPutStr h (asStr `T.append` "\r\n")
+notice h str = do
+    klogNow Blue ("client -> " ++ T.unpack asStr)
+    T.hPutStr h (asStr <> "\r\n")
     where
         asStr = printf "NOTICE AUTH :%s" [str]
 
@@ -153,15 +155,23 @@ getAuthInfo handle = fix (\f authRetry -> do
 welcome :: Handle -> KevinState ()
 welcome handle = do
     nick <- use name
-    mapM_ (\x -> io $ klogNow Blue ("client -> " ++ T.unpack x) >> T.hPutStr handle (x `T.append` "\r\n")) [
-        printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com" [hostname, nick, nick, nick],
-        printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" [hostname, nick],
-        printf ":%s 003 %s :This server was created Thu Apr 28 1994 at 05:30:00 EDT" [hostname, nick],
-        printf ":%s 004 %s chat.deviantart.com dAmnServer0.3 qov i" [hostname, nick],
+    mapM_ (\x -> io $ do
+        klogNow Blue ("client -> " ++ T.unpack x)
+        T.hPutStr handle (x <> "\r\n")) [
+        printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com"
+            [hostname, nick, nick, nick],
+        printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" 
+            [hostname, nick],
+        printf ":%s 003 %s :This server was created Thu Apr 28 1994 at 05:30:00 EDT"
+            [hostname, nick],
+        printf ":%s 004 %s chat.deviantart.com dAmnServer0.3 qov i"
+            [hostname, nick],
         printf ":%s 005 %s PREFIX=(qov)~@+" [hostname, nick],
         printf ":%s 375 %s :- chat.deviantart.com Message of the day -" [hostname, nick],
-        printf ":%s 372 %s :- deviantART chat on IRC brought to by kevin %s, created" [hostname, nick, VERSION],
-        printf ":%s 372 %s :- and maintained by Joel Taylor <http://otter.github.com>" [hostname, nick],
+        printf ":%s 372 %s :- deviantART chat on IRC brought to by kevin %s, created"
+            [hostname, nick, VERSION],
+        printf ":%s 372 %s :- and maintained by Joel Taylor <http://otter.github.com>"
+            [hostname, nick],
         printf ":%s 376 %s :End of MOTD command" [hostname, nick]]
     checkToken handle
     where
