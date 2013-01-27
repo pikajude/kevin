@@ -29,7 +29,6 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.STM (STM, atomically)
 import Control.Monad.State
-import Control.Monad.Trans
 import qualified Data.Map as M
 import qualified Data.Text as T
 import Kevin.Settings
