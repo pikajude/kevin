@@ -5,23 +5,24 @@ module Kevin.IRC.Protocol (
     getAuthInfo
 ) where
 
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import Kevin.Base
-import Kevin.Util.Logger
-import Kevin.Util.Token
-import Kevin.Util.Entity
-import Kevin.IRC.Packet
-import qualified Kevin.Damn.Protocol.Send as D
-import Kevin.IRC.Protocol.Send
 import Control.Applicative ((<$>))
 import Control.Arrow
 import Control.Exception.Lens
 import Control.Monad.State
-import Data.Maybe
-import Data.List (nubBy)
 import Data.Function (on)
+import Data.List (nubBy)
 import qualified Data.Map as M
+import Data.Maybe
+import Data.Monoid
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Kevin.Base
+import qualified Kevin.Damn.Protocol.Send as D
+import Kevin.IRC.Packet
+import Kevin.IRC.Protocol.Send
+import Kevin.Util.Entity
+import Kevin.Util.Logger
+import Kevin.Util.Token
 
 type KevinState = StateT Settings IO
 
@@ -32,68 +33,77 @@ listen :: KevinIO ()
 listen = fix (\f -> flip catches errHandlers $ do
     k <- get_
     pkt <- io $ parsePacket <$> readClient k
-    respond pkt (command pkt)
+    respond pkt (view command pkt)
     f)
 
 respond :: Packet -> T.Text -> KevinIO ()
 respond BadPacket _ = sendNotice "Bad packet, try again."
 respond pkt "JOIN" = do
-    l <- gets_ (^. loggedIn)
+    l <- gets_ (view loggedIn)
     if l
         then mapM_ D.sendJoin rooms
         else kevin $ joining %= (rooms ++)
     where
-        rooms = T.splitOn "," . head . params $ pkt
+        rooms = T.splitOn "," $ pkt^.params._head
 
-respond pkt "PART" = mapM_ D.sendPart . T.splitOn "," . head . params $ pkt
+respond pkt "PART" = mapM_ D.sendPart . T.splitOn "," $ pkt^.params._head
 
 respond pkt "PRIVMSG" = do
-    let (room:msg:_) = params pkt
+    let (room:msg:_) = pkt^.params
     if "\1ACTION" `T.isPrefixOf` msg
         then do
             let newMsg = T.drop 8 $ T.init msg
             D.sendAction room $ entityEncode newMsg
         else D.sendMsg room $ entityEncode msg
 
-respond pkt "MODE" = if length (params pkt) > 1
+respond pkt "MODE" = if length (pkt^.params) > 1
     then do
-        let (toggle,mode) = first (=="+") $ T.splitAt 1 (params pkt !! 1)
+        let (toggle,mode) = first (=="+") . T.splitAt 1 $ pkt^.params.ix 1
         case mode of
-            "b" -> if' toggle D.sendBan D.sendUnban (head $ params pkt) (fromMaybe "random unparseable garbage" . unmask . last . params $ pkt)
-            "o" -> if' toggle D.sendPromote D.sendDemote (head $ params pkt) (last $ params pkt) Nothing
-            _ -> sendRoomNotice (head $ params pkt) $ "Unsupported mode " `T.append` mode
+            "b" -> if' toggle D.sendBan D.sendUnban
+                       (pkt^.params._head)
+                       (fromMaybe "random unparseable garbage" . unmask
+                       $ pkt^.params._last)
+            "o" -> if' toggle D.sendPromote D.sendDemote
+                       (pkt^.params._head)
+                       (pkt^.params._last)
+                       Nothing
+            _ -> sendRoomNotice (pkt^.params._head) $ "Unsupported mode " <> mode
     else do
         uname <- use_ name
-        sendChanMode uname (head $ params pkt)
+        sendChanMode uname (pkt^.params._head)
 
-respond pkt "TOPIC" = case params pkt of
+respond pkt "TOPIC" = case pkt^.params of
 	[] -> sendNotice "Malformed packet"
 	[room] -> D.sendGet room "topic"
 	(room:topic:_) -> D.sendSet room "topic" topic
 
-respond pkt "TITLE" = case params pkt of
+respond pkt "TITLE" = case pkt^.params of
 	[] -> sendNotice "Malformed packet"
 	[room] -> do
 		title <- gets_ $  M.lookup room . (^. titles)
 		let p = T.concat ["Title for ", room, ": "] in mapM_ (sendRoomNotice room . T.append p) (T.splitOn "\n" $ fromMaybe "" title)
 	(room:title) -> D.sendSet room "title" $ T.unwords title
 
-respond pkt "PING" = sendPong (head $ params pkt)
+respond pkt "PING" = sendPong $ pkt^.params._head
 
-respond pkt "WHOIS" = D.sendWhois . head . params $ pkt
+respond pkt "WHOIS" = D.sendWhois $ pkt^.params._head
 
 respond pkt "NAMES" = do
-    let (room:_) = params pkt
+    let room = pkt^.params._head
     k <- get_
     sendUserList (k^.name) (nubBy ((==) `on` username) (k^.users.ix room)) room
 
-respond pkt "KICK" = let p = params pkt in D.sendKick (head p) (p !! 1) (if length p > 2 then Just $ last p else Nothing)
+respond pkt "KICK" = let p = pkt^.params
+                      in D.sendKick (head p)
+                                    (p !! 1)
+                                    (if length p > 2 then Just $ last p else Nothing)
 
 respond _ "QUIT" = klogError "client quit" >> undefined
 
-respond pkt "ADMIN" = let (p:ps) = params pkt in D.sendAdmin p $ T.intercalate " " ps
+respond pkt "ADMIN" = let (p:ps) = pkt^.params in D.sendAdmin p $ T.intercalate " " ps
 
-respond pkt "PROMOTE" = case params pkt of
+respond pkt "PROMOTE" = case pkt^.params of
     (room:user:group:_) -> D.sendPromote room user $ Just group
     (room:_) -> sendRoomNotice room "Usage: /promote #room username group"
     _ -> sendNotice "Usage: /promote #room username group"
@@ -120,12 +130,12 @@ getAuthInfo :: Handle -> Bool -> KevinState ()
 getAuthInfo handle = fix (\f authRetry -> do
     pkt <- io $ parsePacket <$> T.hGetLine handle
     io $ klogNow Yellow $ "client <- " ++ T.unpack (readable pkt)
-    case command pkt of
+    case pkt^.command of
         "PASS" -> do
-           password .= head (params pkt)
+           password .= pkt^.params._head
            passed .= True
         "NICK" -> do
-           name .= head (params pkt)
+           name .= pkt^.params._head
            nicked .= True
         "USER" -> usered .= True
         _ -> io $ klogNow Red $ "invalid packet: " ++ show pkt
