@@ -22,6 +22,7 @@ import Kevin.IRC.Protocol.Send
 import Kevin.Util.Entity
 import Kevin.Util.Logger
 import Kevin.Util.Token
+import Kevin.Version
 
 type KevinState = StateT Settings IO
 
@@ -67,7 +68,8 @@ respond pkt "MODE" = if length (pkt^.params) > 1
                        (pkt^.params._head)
                        (pkt^.params._last)
                        Nothing
-            _ -> sendRoomNotice (pkt^.params._head) $ "Unsupported mode " <> mode
+            _ -> sendRoomNotice (pkt^.params._head)
+                    $ "Unsupported mode " <> mode
     else do
         uname <- use_ name
         sendChanMode uname (pkt^.params._head)
@@ -97,11 +99,14 @@ respond pkt "NAMES" = do
 respond pkt "KICK" = let p = pkt^.params
                       in D.sendKick (head p)
                                     (p !! 1)
-                                    (if length p > 2 then Just $ last p else Nothing)
+                                    (if length p > 2
+                                        then Just $ last p
+                                        else Nothing)
 
 respond _ "QUIT" = klogError "client quit" >> undefined
 
-respond pkt "ADMIN" = let (p:ps) = pkt^.params in D.sendAdmin p $ T.intercalate " " ps
+respond pkt "ADMIN" = D.sendAdmin p $ T.intercalate " " ps
+    where (p:ps) = pkt^.params
 
 respond pkt "PROMOTE" = case pkt^.params of
     (room:user:group:_) -> D.sendPromote room user $ Just group
@@ -117,7 +122,8 @@ unmask y = case T.split (`elem` "@!") y of
     xs -> listToMaybe $ filter (not . T.isInfixOf "*") xs
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [ handler_ _KevinException $ klogError "Bad communication from client"
+errHandlers = [ handler_ _KevinException
+                    $ klogError "Bad communication from client"
               , handler _IOException (\e -> klogError $ "client: " ++ show e)]
 
 -- * Authentication-getting function
@@ -160,17 +166,18 @@ welcome handle = do
         T.hPutStr handle (x <> "\r\n")) [
         printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com"
             [hostname, nick, nick, nick],
-        printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" 
-            [hostname, nick],
-        printf ":%s 003 %s :This server was created Thu Apr 28 1994 at 05:30:00 EDT"
-            [hostname, nick],
+        printf ":%s 002 %s :Your host is chat.deviantart.com\
+            \, running dAmnServer 0.3" [hostname, nick],
+        printf ":%s 003 %s :This server was created Thu Apr 28 1994\
+            \ at 05:30:00 EDT" [hostname, nick],
         printf ":%s 004 %s chat.deviantart.com dAmnServer0.3 qov i"
             [hostname, nick],
         printf ":%s 005 %s PREFIX=(qov)~@+" [hostname, nick],
-        printf ":%s 375 %s :- chat.deviantart.com Message of the day -" [hostname, nick],
-        printf ":%s 372 %s :- deviantART chat on IRC brought to by kevin %s, created"
-            [hostname, nick, VERSION],
-        printf ":%s 372 %s :- and maintained by Joel Taylor <http://otter.github.com>"
+        printf ":%s 375 %s :- chat.deviantart.com Message of the day -" 
+            [hostname, nick],
+        printf ":%s 372 %s :- deviantART chat on IRC brought to you\
+            \ by kevin %s, created" [hostname, nick, versionStr],
+        printf ":%s 372 %s :- and maintained by Joel Taylor <http://otte.rs>"
             [hostname, nick],
         printf ":%s 376 %s :End of MOTD command" [hostname, nick]]
     checkToken handle
@@ -187,5 +194,6 @@ checkToken handle = do
             authtoken .= t
             io $ notice handle "Successfully authenticated."
         Nothing -> do
-            io $ notice handle "Bad password, try again. (/quote pass yourpassword)"
+            io $ notice handle "Bad password, try again.\
+                 \ (/quote pass yourpassword)"
             getAuthInfo handle True

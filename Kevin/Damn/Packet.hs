@@ -88,7 +88,8 @@ okay :: Packet -> Bool
 okay (Packet _ _ a _) = let e = a ^. at "e" in isNothing e || e == Just "ok"
 
 parsePrivclasses :: T.Text -> [Privclass]
-parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . head) . T.splitOn ":") 
+parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . head)
+                       . T.splitOn ":") 
                  . filter (not . T.null)
                  . T.splitOn "\n"
 

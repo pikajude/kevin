@@ -28,11 +28,14 @@ concatHeaders = intercalate "\r\n" . map (\(x,y) -> x ++ ": " ++ y)
 getToken :: T.Text -> T.Text -> IO (Maybe T.Text)
 getToken uname pass = do
     let params = defaultParams { pCiphers = ciphersuite_all
-                               , onCertificatesRecv = certificateChecks
-                                     [return . certificateVerifyDomain "chat.deviantart.com"]
+                               , onCertificatesRecv =
+                                   certificateChecks [return
+                                     . certificateVerifyDomain
+                                         "chat.deviantart.com"]
                                }
+        headers :: [(String, String)]
         headers = [("Connection", "closed"),
-                   ("Content-Type", "application/x-www-form-urlencoded")] :: [(String,String)]
+                   ("Content-Type", "application/x-www-form-urlencoded")]
     gen <- makeSystem
     ctx <- connectionClient "www.deviantart.com" "443" params gen
     let payload = urlEncodeVars [ ("username", T.unpack uname)
@@ -41,7 +44,8 @@ getToken uname pass = do
                                 ]
     handshake ctx
     sendData ctx . LB.pack
-        $ printf "POST /users/login HTTP/1.1\r\n%s\r\nContent-Length: %d\r\n\r\n%s"
+        $ printf "POST /users/login HTTP/1.1\r\n%s\r\n\
+            \Content-Length: %d\r\n\r\n%s"
             (concatHeaders $ ("Host", "www.deviantart.com"):headers)
             (length payload)
             payload
@@ -49,10 +53,13 @@ getToken uname pass = do
     if "wrong-password" `B.isInfixOf` bs
         then return Nothing
         else do
-            let cookie = B.intercalate ";" . map snd . filter ((== "Set-Cookie") . fst)
-                       . map (second (B.drop 2 . B.takeWhile (/=';')) . B.breakSubstring ": ")
+            let cookie = B.intercalate ";" . map snd
+                       . filter ((== "Set-Cookie") . fst)
+                       . map (second (B.drop 2 . B.takeWhile (/=';'))
+                            . B.breakSubstring ": ")
                        . B.lines $ bs
-                s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\ncookie: %s\r\n\r\n"
+                s = printf "GET /chat/Botdom HTTP/1.1\r\n%s\r\n\
+                        \cookie: %s\r\n\r\n"
                         (concatHeaders [("Host", "chat.deviantart.com")])
                         (B.unpack cookie)
             sendData ctx $ LB.pack s

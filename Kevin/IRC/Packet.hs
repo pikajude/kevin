@@ -8,6 +8,7 @@ module Kevin.IRC.Packet (
 
 import Control.Applicative ((<|>), (<$>), (<*>), (*>), (<*))
 import Control.Lens
+import Control.Monad
 import Data.Attoparsec.Text
 import Data.Char
 import Data.Monoid
@@ -48,8 +49,9 @@ parsePrefix :: Parser T.Text
 parsePrefix = username <|> servername
 
 parseCommand :: Parser T.Text
-parseCommand = takeWhile1 isAlpha <|>
-               (do { a <- digit; b <- digit; c <- digit; return $ T.pack [a,b,c]})
+parseCommand = takeWhile1 isAlpha
+           <|> liftM3 (\a b c -> T.pack [a,b,c])
+                      digit digit digit
 
 parseParams :: Parser [T.Text]
 parseParams = (colonParam <|> nonColonParam) `sepBy` spaces

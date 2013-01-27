@@ -27,6 +27,7 @@ import Data.List (sort)
 import Data.Monoid
 import qualified Data.Text as T
 import Kevin.Base
+import Kevin.Version
 
 maybeBody :: Maybe T.Text -> T.Text
 maybeBody = maybe "" ("\n\n" <>)
@@ -49,7 +50,8 @@ deformatRoom room = if "chat:" `T.isPrefixOf` room
     then return $ '#' `T.cons` T.drop 5 room
     else do
         uname <- use_ name
-        return $ '&' `T.cons` head (filter (/= uname) . T.splitOn ":" . T.drop 6 $ room)
+        return $ T.cons '&' (head (filter (/= uname) . T.splitOn ":"
+                                  . T.drop 6 $ room))
 
 type Str = T.Text -- just make it shorter
 type Room = Str
@@ -70,7 +72,8 @@ sendSet :: Room -> Str -> Str -> KevinIO ()
 sendAdmin :: Room -> Str -> KevinIO ()
 sendKill :: Username -> Str -> KevinIO ()
 
-sendHandshake = sendPacket $ printf "dAmnClient 0.3\nagent=kevin%s\n" [VERSION]
+sendHandshake = sendPacket $ printf "dAmnClient 0.3\nagent=kevin%s\n"
+                    [versionStr]
 
 sendLogin u token = sendPacket $ printf "login %s\npk=%s\n" [u, token]
 
