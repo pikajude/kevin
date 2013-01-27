@@ -22,10 +22,11 @@ module Kevin.Damn.Protocol.Send (
     sendKill
 ) where
 
-import Kevin.Base
-import qualified Data.Text as T
-import Data.List (sort)
 import Data.Char (toLower)
+import Data.List (sort)
+import Data.Monoid
+import qualified Data.Text as T
+import Kevin.Base
 
 maybeBody :: Maybe T.Text -> T.Text
 maybeBody = maybe "" (T.append "\n\n")
@@ -36,11 +37,12 @@ sendPacket p = get_ >>= \k -> io . writeServer k . T.snoc p $ '\0'
 formatRoom :: T.Text -> KevinIO T.Text
 formatRoom b =
     case T.splitAt 1 b of
-        ("#",s) -> return $ "chat:" `T.append` s
+        ("#",s) -> return $ "chat:" <> s
         ("&",s) -> do
             uname <- use_ name
-            return . T.append "pchat:" . T.intercalate ":" . sort . map (T.map toLower) $ [uname, s]
-        r -> return $ "chat" `T.append` uncurry T.append r
+            return . T.append "pchat:" . T.intercalate ":"
+                   . sort . map (T.map toLower) $ [uname, s]
+        r -> return $ "chat" <> uncurry T.append r
 
 deformatRoom :: T.Text -> KevinIO T.Text
 deformatRoom room = if "chat:" `T.isPrefixOf` room

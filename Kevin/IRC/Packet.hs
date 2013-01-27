@@ -1,20 +1,25 @@
 module Kevin.IRC.Packet (
     Packet(..),
+    prefix, command, params,
+    
     parsePacket,
     readable
 ) where
 
-import Prelude hiding (takeWhile)
-import qualified Data.Text as T
-import Data.Char
-import Data.Attoparsec.Text
 import Control.Applicative ((<|>), (<$>), (<*>), (*>), (<*))
+import Control.Lens
+import Data.Attoparsec.Text
+import Data.Char
+import qualified Data.Text as T
+import Prelude hiding (takeWhile)
 
-data Packet = Packet { prefix :: Maybe T.Text
-                     , command :: T.Text
-                     , params :: [T.Text]
+data Packet = Packet { _prefix :: Maybe T.Text
+                     , _command :: T.Text
+                     , _params :: [T.Text]
                      }
 			| BadPacket deriving (Show)
+
+makeLenses ''Packet
 
 badChars :: String
 badChars = "\x20\x0\xd\xa"
@@ -62,12 +67,12 @@ messageBegin = Just <$> (char ':' *> parsePrefix <* spaces)
 
 packetParser :: Parser Packet
 packetParser = do
-    pre <- option Nothing messageBegin
+    pr <- option Nothing messageBegin
     cmd <- T.map toUpper <$> parseCommand
     spaces
     par <- filter (not . T.null) <$> parseParams
     option "" crlf
-    return $ Packet pre cmd par
+    return $ Packet pr cmd par
 
 parsePacket :: T.Text -> Packet
 parsePacket str = case parseOnly packetParser str of
@@ -75,7 +80,9 @@ parsePacket str = case parseOnly packetParser str of
     Right p -> p
 
 showParams :: [T.Text] -> T.Text
-showParams = T.unwords . map (\str -> if " " `T.isInfixOf` str then T.cons ':' str else str)
+showParams = T.unwords . map (\str -> if " " `T.isInfixOf` str
+    then T.cons ':' str
+    else str)
 
 readable :: Packet -> T.Text
 readable (Packet (Just str) cmd pms) = flip T.append "\r\n" $ T.unwords [T.cons ':' str, cmd, showParams pms]
