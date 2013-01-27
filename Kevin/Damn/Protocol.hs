@@ -55,7 +55,8 @@ respond pkt "join" = do
             kevin $ joining %= (roomname:)
             uname <- use_ name
             I.sendJoin uname roomname
-        else I.sendNotice $ T.concat ["Couldn't join ", roomname, ": ", pkt^.args.ix "e"]
+        else I.sendNotice $ T.concat
+            ["Couldn't join ", roomname, ": ", pkt^.args.ix "e"]
 
 respond pkt "part" = do
     roomname <- deformatRoom $ pkt^.parameter._Just
@@ -64,12 +65,14 @@ respond pkt "part" = do
             uname <- use_ name
             removeRoom roomname
             I.sendPart uname roomname Nothing
-        else I.sendNotice $ T.concat ["Couldn't part ", roomname, ": ", pkt^.args.ix "e"]
+        else I.sendNotice $ T.concat
+            ["Couldn't part ", roomname, ": ", pkt^.args.ix "e"]
 
 respond pkt "property" = do
     roomname <- deformatRoom (pkt^.parameter._Just)
     case pkt^.args.ix "p" of
-        "privclasses" -> setPrivclasses roomname . parsePrivclasses $ pkt^.body._Just
+        "privclasses" -> setPrivclasses roomname . parsePrivclasses
+            $ pkt^.body._Just
 
         "topic" -> do
             uname <- use_ name
@@ -87,7 +90,8 @@ respond pkt "property" = do
             let members = map (mkUser roomname (k^.privclasses) . parsePacket)
                         . init . T.splitOn "\n\n"
                         $ pkt^.body._Just
-                pc = privclass . head . filter (\x -> username x == k^.name) $ members
+                pc = privclass . head . filter (\x -> username x == k^.name)
+                   $ members
                 n = nub members
             setUsers roomname members
             when (roomname `elem` k^.joining) $ do
@@ -99,7 +103,8 @@ respond pkt "property" = do
         "info" -> do
             us <- use_ name
             curtime <- io $ floor <$> getPOSIXTime
-            let fixedPacket = parsePacket . T.init . T.replace "\n\nusericon" "\nusericon"
+            let fixedPacket = parsePacket . T.init
+                            . T.replace "\n\nusericon" "\nusericon"
                             . readable $ pkt
                 uname = T.drop 6 $ pkt^.parameter._Just
                 rn = fixedPacket^.args.ix "realname"
@@ -130,7 +135,8 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
         if countUser == 0
             then do
                 I.sendJoin usname roomname
-                pclevel <- getPrivclassLevel roomname (modifiedPkt^.args.ix "pc")
+                pclevel <- getPrivclassLevel roomname
+                    $ modifiedPkt^.args.ix "pc"
                 I.sendSetUserMode usname roomname pclevel
             else I.sendNoticeClone (username us) (succ countUser) roomname
 
@@ -146,13 +152,15 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
         let uname = arg "from"
             msg   = pkt^.body._Just
         un <- use_ name
-        unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
+        unless (un == uname) $ I.sendChanMsg uname roomname
+            (entityDecode $ tablumpDecode msg)
 
     "action" -> do
         let uname = arg "from"
             msg   = pkt^.body._Just
         un <- use_ name
-        unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
+        unless (un == uname) $ I.sendChanAction uname roomname
+            (entityDecode $ tablumpDecode msg)
 
     "privchg" -> do
         let user = pkt^.parameter._Just
@@ -193,7 +201,8 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
                      , arg "name", " by ", arg "by"]
         "remove" -> I.sendRoomNotice roomname $
             T.concat ["Privclass", arg "name", " removed by ", arg "by"]
-        "show"   -> mapM_ (I.sendRoomNotice roomname) . T.splitOn "\n" $ pkt^.body._Just
+        "show"   -> mapM_ (I.sendRoomNotice roomname) . T.splitOn "\n"
+                        $ pkt^.body._Just
         "privclass" -> I.sendRoomNotice roomname $ "Admin error: " <> arg "e"
         q -> klogError $ "Unknown admin packet type " ++ show q
 
@@ -208,7 +217,8 @@ respond pkt "kicked" = do
     roomname <- deformatRoom $ pkt^.parameter._Just
     uname <- use_ name
     removeRoom roomname
-    I.sendKick uname (pkt^.args.ix "by") roomname $ pkt^.body.traverse ^? notNull_
+    I.sendKick uname (pkt^.args.ix "by") roomname
+        $ pkt^.body.traverse ^? notNull_
 
 respond pkt "send" = I.sendNotice $ "Send error: " <> pkt^.args.ix "e"
 
@@ -229,5 +239,6 @@ mkUser room st p = User (p^.parameter._Just)
         g s = p^.args.ix s
 
 errHandlers :: [Handler KevinIO ()]
-errHandlers = [ handler_ _KevinException $ klogError "Malformed communication from server"
+errHandlers = [ handler_ _KevinException
+                    $ klogError "Malformed communication from server"
               , handler _IOException (\e -> klogError $ "server: " ++ show e) ]

@@ -37,7 +37,8 @@ numUsers :: Chatroom -> T.Text -> KevinIO Int
 numUsers ch us = do
     st <- gets_ $ view users
     case st^.at ch of
-        Just usrs -> return . length $ findIndices (\u -> us == username u) usrs
+        Just usrs -> return . length
+            $ findIndices (\u -> us == username u) usrs
         Nothing -> return 0
 
 removeUser :: Chatroom -> T.Text -> KevinIO ()
@@ -56,7 +57,8 @@ getPrivclass :: Chatroom -> T.Text -> KevinIO (Maybe T.Text)
 getPrivclass room user = do
     st <- gets_ $ view users
     case st^.at room of
-        Just qs -> return $ privclass <$> listToMaybe (filter ((== user) . username) qs)
+        Just qs -> return $ privclass
+            <$> listToMaybe (filter ((== user) . username) qs)
         Nothing -> return Nothing
         
 getPrivclassLevel :: Chatroom -> T.Text -> KevinIO Int

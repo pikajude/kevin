@@ -37,7 +37,8 @@ import System.IO as K
 import System.IO.Error
 
 runPrinter :: Chan T.Text -> Handle -> IO ()
-runPrinter ch h = void $ forkIO $ forever $ readChan ch >>= T.hPutStr h . T.encodeUtf8
+runPrinter ch h = void . forkIO . forever $ readChan ch >>=
+    T.hPutStr h . T.encodeUtf8
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
