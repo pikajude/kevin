@@ -23,17 +23,17 @@ module Kevin.Types (
     if'
 ) where
 
-import qualified Data.Text as T
-import qualified Data.Map as M
-import System.IO
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Monad.Trans
-import Control.Monad.Reader
-import Control.Monad.State
-import Control.Monad.STM (STM, atomically)
-import Kevin.Settings
 import Control.Lens
+import Control.Monad.Reader
+import Control.Monad.STM (STM, atomically)
+import Control.Monad.State
+import Control.Monad.Trans
+import qualified Data.Map as M
+import qualified Data.Text as T
+import Kevin.Settings
+import System.IO
 
 if' :: Bool -> a -> a -> a
 if' x y z = if x then y else z
