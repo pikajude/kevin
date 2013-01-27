@@ -9,11 +9,11 @@ module Kevin.Util.Logger (
     printf
 ) where
 
-import Kevin.Types
-import Data.Char (isSpace)
-import qualified Data.Text as T
 import Control.Concurrent
 import Control.Monad.State
+import Data.Char (isSpace)
+import qualified Data.Text as T
+import Kevin.Types
 
 data Color = Red | Blue | Green | Cyan | Magenta | Yellow | Gray
 

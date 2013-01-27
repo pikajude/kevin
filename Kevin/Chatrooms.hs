@@ -18,10 +18,9 @@ module Kevin.Chatrooms (
 import Control.Applicative
 import Control.Lens
 import Data.List
--- import Data.Monoid
-import qualified Data.Text as T
 import qualified Data.Map as M
 import Data.Maybe
+import qualified Data.Text as T
 import Kevin.Types
 
 deleteBy' :: (a -> Bool) -> [a] -> [a]
@@ -50,9 +49,6 @@ removeUserAll ch us = kevin $ users.ix ch %= filter ((/= us) . username)
 setUsers :: Chatroom -> [User] -> KevinIO ()
 setUsers ch uss = kevin $ users.at ch .= Just uss
 
--- addPrivclass :: Chatroom -> Privclass -> KevinIO ()
--- addPrivclass room (p,i) = kevin $ privclasses.ix room %= (M.singleton p i <>)
-
 setPrivclasses :: Chatroom -> [Privclass] -> KevinIO ()
 setPrivclasses room ps = kevin $ privclasses.at room .= Just (M.fromList ps)
 
@@ -71,7 +67,8 @@ getPrivclassLevel room pc = do
 setUserPrivclass :: Chatroom -> T.Text -> T.Text -> KevinIO ()
 setUserPrivclass room user pc = do
     pclevel <- getPrivclassLevel room pc
-    kevin $ users.ix room.traverse.filtered ((user ==) . username) %= (\u -> u {privclass = pc, privclassLevel = pclevel})
+    kevin $ users.ix room.traverse.filtered ((user ==) . username)
+            %= (\u -> u {privclass = pc, privclassLevel = pclevel})
 
 setTitle :: Chatroom -> T.Text -> KevinIO ()
 setTitle ch t = kevin $ titles.at ch .= Just t
