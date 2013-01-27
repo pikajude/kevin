@@ -52,8 +52,8 @@ Executable kevin
                         Kevin.Util.Entity,
                         Kevin.Util.Logger,
                         Kevin.Util.Tablump,
-                        Kevin.Util.Token
+                        Kevin.Util.Token,
+                        Kevin.Version
                 
-    default-extensions: CPP, DeriveDataTypeable, ExistentialQuantification, FlexibleContexts, OverloadedStrings, ScopedTypeVariables, TemplateHaskell
+    default-extensions: DeriveDataTypeable, ExistentialQuantification, FlexibleContexts, OverloadedStrings, ScopedTypeVariables, TemplateHaskell
     ghc-options:        -Wall -fno-warn-unused-do-bind -threaded
-    cpp-options:        -DVERSION="0.7"
