@@ -10,6 +10,7 @@ import Control.Applicative ((<|>), (<$>), (<*>), (*>), (<*))
 import Control.Lens
 import Data.Attoparsec.Text
 import Data.Char
+import Data.Monoid
 import qualified Data.Text as T
 import Prelude hiding (takeWhile)
 
@@ -17,7 +18,7 @@ data Packet = Packet { _prefix :: Maybe T.Text
                      , _command :: T.Text
                      , _params :: [T.Text]
                      }
-			| BadPacket deriving (Show)
+            | BadPacket deriving (Show)
 
 makeLenses ''Packet
 
@@ -85,6 +86,7 @@ showParams = T.unwords . map (\str -> if " " `T.isInfixOf` str
     else str)
 
 readable :: Packet -> T.Text
-readable (Packet (Just str) cmd pms) = flip T.append "\r\n" $ T.unwords [T.cons ':' str, cmd, showParams pms]
-readable (Packet Nothing c p) = flip T.append "\r\n" $ T.unwords [c, showParams p]
+readable (Packet (Just str) cmd pms) = (<> "\r\n")
+    $ T.unwords [T.cons ':' str, cmd, showParams pms]
+readable (Packet Nothing c p) = (<> "\r\n") $ T.unwords [c, showParams p]
 readable _ = ""

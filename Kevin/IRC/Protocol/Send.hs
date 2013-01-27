@@ -4,7 +4,7 @@ module Kevin.IRC.Protocol.Send (
     sendSetUserMode,
     sendChangeUserMode,
     sendNotice,
-	sendRoomNotice,
+    sendRoomNotice,
     sendChanMsg,
     sendChanAction,
     sendKick,
@@ -17,6 +17,7 @@ module Kevin.IRC.Protocol.Send (
     sendWhoisReply
 ) where
 
+import Data.Monoid
 import qualified Data.Text as T
 import Kevin.Base
 
@@ -27,10 +28,10 @@ getHost :: T.Text -> T.Text
 getHost u = T.concat [":", u, "!", u, "@chat.deviantart.com"]
 
 sendPacket :: T.Text -> KevinIO ()
-sendPacket p = get_ >>= \k -> io . writeClient k $ T.append p "\r\n"
+sendPacket p = get_ >>= \k -> io . writeClient k $ p <> "\r\n"
 
 maybeBody :: Maybe T.Text -> T.Text
-maybeBody = maybe "" (T.append " :")
+maybeBody = maybe "" (" :" <>)
 
 type Str = T.Text
 type Room = Str
@@ -78,7 +79,7 @@ sendNotice =
     sendPacket . printf "NOTICE AUTH :%s" . return
 
 sendRoomNotice room n =
-	sendPacket $ printf "%s NOTICE %s :%s" [hostname, room, n]
+    sendPacket $ printf "%s NOTICE %s :%s" [hostname, room, n]
 
 sendChanMsg sender room msg = mapM_ (\x ->
     sendPacket $ printf "%s PRIVMSG %s :%s" [getHost sender, room, x]
@@ -122,7 +123,7 @@ sendNoticeUnclone uname i rm =
     sendPacket $ printf "%s NOTICE %s :%s has parted (now joined %s)" [hostname, rm, uname, times]
     where
         times | i == 1    = "once"
-              | otherwise = T.pack (show i) `T.append` " times"
+              | otherwise = T.pack (show i) <> " times"
 
 sendWhoisReply me us rn rooms idle signon = do
     sendPacket $ printf "%s 311 %s %s %s chat.deviantart.com * :%s" [hostname, me, us, us, rn]

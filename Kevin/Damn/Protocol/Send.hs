@@ -29,7 +29,7 @@ import qualified Data.Text as T
 import Kevin.Base
 
 maybeBody :: Maybe T.Text -> T.Text
-maybeBody = maybe "" (T.append "\n\n")
+maybeBody = maybe "" ("\n\n" <>)
 
 sendPacket :: T.Text -> KevinIO ()
 sendPacket p = get_ >>= \k -> io . writeServer k . T.snoc p $ '\0'
@@ -40,9 +40,9 @@ formatRoom b =
         ("#",s) -> return $ "chat:" <> s
         ("&",s) -> do
             uname <- use_ name
-            return . T.append "pchat:" . T.intercalate ":"
+            return . ("pchat:" <>) . T.intercalate ":"
                    . sort . map (T.map toLower) $ [uname, s]
-        r -> return $ "chat" <> uncurry T.append r
+        r -> return $ "chat" <> uncurry (<>) r
 
 deformatRoom :: T.Text -> KevinIO T.Text
 deformatRoom room = if "chat:" `T.isPrefixOf` room
@@ -113,16 +113,16 @@ sendKick room us reason = do
     sendPacket $ printf "kick %s\nu=%s%s\n" [roomname, us, maybeBody reason]
 
 sendGet room prop = do
-	guard $ prop `elem` ["title", "topic", "privclasses", "members"]
-	roomname <- formatRoom room
-	sendPacket $ printf "get %s\np=%s\n" [roomname, prop]
+    guard $ prop `elem` ["title", "topic", "privclasses", "members"]
+    roomname <- formatRoom room
+    sendPacket $ printf "get %s\np=%s\n" [roomname, prop]
 
 sendWhois us = sendPacket $ printf "get login:%s\np=info\n" [us]
 
 sendSet room prop val = do
-	guard (prop == "topic" || prop == "title")
-	roomname <- formatRoom room
-	sendPacket $ printf "set %s\np=%s\n\n%s\n" [roomname, prop, val]
+    guard (prop == "topic" || prop == "title")
+    roomname <- formatRoom room
+    sendPacket $ printf "set %s\np=%s\n\n%s\n" [roomname, prop, val]
 
 sendAdmin room cmd = do
     roomname <- formatRoom room
