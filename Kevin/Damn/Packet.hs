@@ -68,7 +68,7 @@ parseHead = do
 parsePacket :: T.Text -> Packet
 parsePacket pack = case parseOnly parseHead top of
     Left _ -> throw ParseFailure
-    Right res -> res & body .~ (T.drop 2 <$> toMaybe T.null b)
+    Right res -> res & body .~ (T.drop 2 <$> toMaybe (not . T.null) b)
     where
         (top, b) = T.breakOn "\n\n" pack
 

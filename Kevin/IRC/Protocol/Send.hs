@@ -108,9 +108,9 @@ sendUserList us uss rm = do
         chunkedNames = reverse . map reverse . subchunk' 432 names $ [[]]
         subchunk' n = fix (\f x y -> let hy = head y; hx = head x; ty = tail y; tx = tail x in if null x
             then y
-            else if sum (map T.length hy) + T.length hx <= n
-                then f tx ((hx:hy):ty)
-                else f tx ([hx]:y))
+            else f tx $ if sum (map T.length hy) + T.length hx <= n
+                then (hx:hy):ty
+                else [hx]:y)
 
 sendPong p =
     sendPacket $ printf "%s PONG chat.deviantart.com :%s" [hostname, p]

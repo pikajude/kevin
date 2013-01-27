@@ -7,7 +7,7 @@ module Kevin.Damn.Protocol (
 
 import Control.Applicative ((<$>))
 import Control.Exception.Lens
-import Data.List (delete, nub, sortBy)
+import Data.List (delete, nub, minimumBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid
 import Data.Ord (comparing)
@@ -113,7 +113,7 @@ respond pkt "property" = do
                   ) . tail . T.splitOn "conn"
                     $ fixedPacket^.body._Just
                 allRooms = nub $ conns >>= (\(_,_,c) -> c)
-                (onlinespan,idle,_) = head . sortBy (comparing (view _1)) $ conns
+                (onlinespan,idle,_) = minimumBy (comparing (view _1)) conns
                 signon = curtime - onlinespan
             I.sendWhoisReply us uname (entityDecode rn) allRooms idle signon
 
