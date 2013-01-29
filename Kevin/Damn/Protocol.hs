@@ -132,7 +132,6 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
         countUser <- numUsers roomname usname
         let us = mkUser roomname pcs modifiedPkt
         addUser roomname us
-        klogError $ show (usname, pcs, countUser, pkt, modifiedPkt, us, username us)
         if countUser == 0
             then do
                 I.sendJoin usname roomname
