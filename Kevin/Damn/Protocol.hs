@@ -132,6 +132,7 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
         countUser <- numUsers roomname usname
         let us = mkUser roomname pcs modifiedPkt
         addUser roomname us
+        klogError $ show (usname, pcs, countUser, pkt, modifiedPkt, us, username us)
         if countUser == 0
             then do
                 I.sendJoin usname roomname
@@ -210,7 +211,7 @@ respond spk "recv" = deformatRoom (spk^.parameter._Just) >>= \roomname ->
 
     where
         pkt = fromJust $ subPacket spk
-        modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" $ pkt^.body._Just)
+        modifiedPkt = parsePacket (T.replace "\n\npc" "\npc" $ readable pkt)
         arg s = pkt^.args.ix s
 
 respond pkt "kicked" = do
