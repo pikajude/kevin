@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Kevin.Util.Entity (
     entityEncode,
     entityDecode
