@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Kevin.IRC.Protocol.Send (
     sendJoin,
     sendPart,

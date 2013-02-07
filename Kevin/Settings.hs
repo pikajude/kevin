@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Kevin.Settings where
 
 import Control.Lens

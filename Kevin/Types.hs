@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Kevin.Types (
     Kevin(Kevin, damn, irc, dChan, iChan, logger),
     KevinIO,
