@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-
 module Kevin.Damn.Packet (
     Packet(..),
     command, parameter, args, body,

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kevin.Util.Token (
     getToken
 ) where

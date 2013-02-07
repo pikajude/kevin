@@ -54,3 +54,6 @@ Executable kevin
                         Kevin.Util.Tablump,
                         Kevin.Util.Token,
                         Kevin.Version
+                
+    default-extensions: DeriveDataTypeable, ExistentialQuantification, FlexibleContexts, OverloadedStrings, ScopedTypeVariables, TemplateHaskell
+    ghc-options:        -Wall -fno-warn-unused-do-bind -threaded

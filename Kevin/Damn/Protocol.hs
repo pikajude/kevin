@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Kevin.Damn.Protocol (
     initialize,
     cleanup,

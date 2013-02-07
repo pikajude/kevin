@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-
 module Kevin.Base (
     module Kevin.Types,
     KevinException(..),
