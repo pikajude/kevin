@@ -4,7 +4,7 @@ import Data.Text (Text, pack)
 import Data.Version
 
 version :: Version
-version = Version [0,7,2] []
+version = Version [0,7,3] []
 
 versionStr :: Text
 versionStr = pack $ showVersion version
