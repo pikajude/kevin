@@ -83,19 +83,13 @@ hGetSep sep h = fix (\f -> do
 instance KevinServer Kevin where
     readClient k = do
         line <- T.decodeUtf8 <$> T.hGetLine (irc k)
-        klog_ (logger k) Yellow $ "client <- " ++ padLines 10 line
         return $ T.init line
     readServer k = do
         line <- T.pack <$> hGetSep '\NUL' (damn k)
-        klog_ (logger k) Cyan $ "server <- " ++ padLines 10 line
         return line
 
-    writeClient k pkt = do
-        klog_ (logger k) Blue $ "client -> " ++ padLines 10 pkt
-        writeChan (iChan k) pkt
-    writeServer k pkt = do
-        klog_ (logger k) Magenta $ "server -> " ++ padLines 10 pkt
-        writeChan (dChan k) pkt
+    writeClient k pkt = writeChan (iChan k) pkt
+    writeServer k pkt = writeChan (dChan k) pkt
 
     closeClient = hClose . irc
     closeServer = hClose . damn
