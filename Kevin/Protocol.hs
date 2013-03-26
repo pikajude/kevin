@@ -8,7 +8,7 @@ import Kevin.Base
 import qualified Kevin.Damn.Protocol as S
 import qualified Kevin.IRC.Protocol as C
 import Kevin.Util.Logger
-import Prelude hiding (catch)
+import Prelude
 
 watchInterrupt :: [Handler IO (Maybe Kevin)]
 watchInterrupt = [ handler _AsyncException throw

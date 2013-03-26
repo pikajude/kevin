@@ -86,7 +86,7 @@ kevin m = ask >>= \v -> liftIO $ atomically $ do
 
 type KevinIO = ReaderT (TVar Kevin) IO
 
-use_ :: Getting a Kevin t a b -> KevinIO a
+use_ :: Getting a Kevin a -> KevinIO a
 use_ = gets_ . view
 
 get_ :: KevinIO Kevin

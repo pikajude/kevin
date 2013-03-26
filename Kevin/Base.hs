@@ -24,7 +24,6 @@ import Control.Lens as K
 import Control.Monad.CatchIO as K
 import Control.Monad.Reader as K
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
-import Data.List (intercalate)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Typeable
@@ -58,12 +57,6 @@ _KevinException :: Prism' SomeException KevinException
 _KevinException = exception
 
 -- actions
-
-padLines :: Int -> T.Text -> String
-padLines len b = let (first:rest) = lines $ T.unpack b
-                  in (++) (first ++ "\n") . intercalate "\n"
-                          . map (replicate len ' ' ++)
-                        $ rest
 
 hGetCharTimeout :: Handle -> Int -> IO Char
 hGetCharTimeout h t = do
