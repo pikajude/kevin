@@ -77,12 +77,10 @@ instance KevinServer Kevin where
     readClient k = do
         line <- T.decodeUtf8 <$> T.hGetLine (irc k)
         return $ T.init line
-    readServer k = do
-        line <- T.pack <$> hGetSep '\NUL' (damn k)
-        return line
+    readServer k = T.pack <$> hGetSep '\NUL' (damn k)
 
-    writeClient k pkt = writeChan (iChan k) pkt
-    writeServer k pkt = writeChan (dChan k) pkt
+    writeClient k = writeChan (iChan k)
+    writeServer k = writeChan (dChan k)
 
     closeClient = hClose . irc
     closeServer = hClose . damn
