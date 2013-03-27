@@ -48,10 +48,10 @@ removeUserAll :: Chatroom -> T.Text -> KevinIO ()
 removeUserAll ch us = kevin $ users.ix ch %= filter ((/= us) . username)
 
 setUsers :: Chatroom -> [User] -> KevinIO ()
-setUsers ch uss = kevin $ users.at ch .= Just uss
+setUsers ch uss = kevin $ users.at ch ?= uss
 
 setPrivclasses :: Chatroom -> [Privclass] -> KevinIO ()
-setPrivclasses room ps = kevin $ privclasses.at room .= Just (M.fromList ps)
+setPrivclasses room ps = kevin $ privclasses.at room ?= M.fromList ps
 
 getPrivclass :: Chatroom -> T.Text -> KevinIO (Maybe T.Text)
 getPrivclass room user = do
@@ -73,4 +73,4 @@ setUserPrivclass room user pc = do
             %= (\u -> u {privclass = pc, privclassLevel = pclevel})
 
 setTitle :: Chatroom -> T.Text -> KevinIO ()
-setTitle ch t = kevin $ titles.at ch .= Just t
+setTitle ch t = kevin $ titles.at ch ?= t
