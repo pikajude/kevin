@@ -42,8 +42,7 @@ render col str = "\027[" ++ show (colorAsNum col)
                          ++ "m" ++ rtrimmed
                          ++ "\027[0m"
     where
-        rtrimmed = reverse . dropWhile (\x -> isSpace x || x == '\x0')
-                 . reverse $ str
+        rtrimmed = reverse . dropWhile (\x -> isSpace x || x == '\x0') . reverse $ str
 
 klog_ :: Chan String -> Color -> String -> IO ()
 klog_ ch col str = writeChan ch $ render col str

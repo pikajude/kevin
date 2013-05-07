@@ -7,9 +7,9 @@ import Data.Text
 data Settings = Settings { _name      :: Text
                          , _password  :: Text
                          , _authtoken :: Text
-                         , _passed :: Bool
-                         , _nicked :: Bool
-                         , _usered :: Bool
+                         , _passed    :: Bool
+                         , _nicked    :: Bool
+                         , _usered    :: Bool
                          } deriving (Show)
 
 makeClassy ''Settings
