@@ -18,57 +18,48 @@ decodeCharacter :: Parser T.Text
 decodeCharacter = entityNumeric <|> entityNamed <|> take 1
 
 entityNumeric :: Parser T.Text
-entityNumeric = do
-    string "&#"
-    entity <- (<>) <$> option "" (string "x") <*> takeWhile1 isHexDigit
-    char ';'
-    return . fromMaybe (T.concat ["&#", entity, ";"])
-           $ (if "x" `T.isPrefixOf` entity 
-               then lookupHexEntity
-               else lookupNumericEntity) entity
+entityNumeric = do string "&#"
+                   entity <- (<>) <$> option "" (string "x") <*> takeWhile1 isHexDigit
+                   char ';'
+                   return . fromMaybe (T.concat ["&#", entity, ";"]) $ (if "x" `T.isPrefixOf` entity 
+                                                                           then lookupHexEntity
+                                                                           else lookupNumericEntity) entity
 
 entityNamed :: Parser T.Text
-entityNamed = do
-    char '&'
-    entity <- T.cons <$> letter <*> takeWhile1 isAlphaNum
-    char ';'
-    return . fromMaybe (T.concat ["&", entity, ";"])
-           . lookupNamedEntity $ entity
+entityNamed = do char '&'
+                 entity <- T.cons <$> letter <*> takeWhile1 isAlphaNum
+                 char ';'
+                 return . fromMaybe (T.concat ["&", entity, ";"]) . lookupNamedEntity $ entity
 
 decodeParser :: Parser T.Text
 decodeParser = T.concat <$> many1 decodeCharacter
 
 entityDecode :: T.Text -> T.Text
 entityDecode "" = ""
-entityDecode str = case parseOnly decodeParser str of
-    Left err -> error $ "entityDecode: " ++ err
-    Right s -> s
+entityDecode str = case parseOnly decodeParser str of Left err -> error $ "entityDecode: " ++ err
+                                                      Right s -> s
 
 entityEncode :: T.Text -> T.Text
 entityEncode = T.pack . concat . entityEncodeS . T.unpack
 
 entityEncodeS :: String -> [String]
-entityEncodeS = fix (\f str -> case str of
-    [] -> []
-    (x:xs) -> if x < '\127' then [x]:f xs
-                            else ("&#" ++ show (ord x) ++ ";"):f xs)
+entityEncodeS = fix (\f str -> case str of [] -> []
+                                           (x:xs) -> if x < '\127'
+                                                        then [x]:f xs
+                                                        else ("&#" ++ show (ord x) ++ ";"):f xs)
 
 lookupNamedEntity :: T.Text -> Maybe T.Text
 lookupNamedEntity ent = (T.singleton . chr) <$> lookup ent namedEntities
 
 lookupHexEntity :: T.Text -> Maybe T.Text
-lookupHexEntity e = case R.hexadecimal $ T.cons '0' e of
-    Right (n,_) -> do
-        guard $ n < ord maxBound
-        return . T.singleton . chr $ n
-    Left _ -> Nothing
+lookupHexEntity e = case R.hexadecimal $ T.cons '0' e of Right (n,_) -> do guard $ n < ord maxBound
+                                                                           return . T.singleton . chr $ n
+                                                         Left _ -> Nothing
 
 lookupNumericEntity :: T.Text -> Maybe T.Text
-lookupNumericEntity e = case R.decimal e of
-    Right (n,_) -> do
-        guard $ n < ord maxBound
-        return . T.singleton . chr $ n
-    Left _ -> Nothing
+lookupNumericEntity e = case R.decimal e of Right (n,_) -> do guard $ n < ord maxBound
+                                                              return . T.singleton . chr $ n
+                                            Left _ -> Nothing
 
 namedEntities :: [(T.Text, Int)]
 namedEntities = [ ("quot", 34), ("amp", 38), ("apos", 39), ("lt", 60)

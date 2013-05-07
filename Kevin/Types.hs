@@ -39,35 +39,35 @@ if' x y z = if x then y else z
 
 type Chatroom = T.Text
 
-data User = User { username :: T.Text
-                 , privclass :: T.Text
+data User = User { username       :: T.Text
+                 , privclass      :: T.Text
                  , privclassLevel :: Int
-                 , symbol :: T.Text
-                 , realname :: T.Text
-                 , typename :: T.Text
-                 , gpc :: T.Text
+                 , symbol         :: T.Text
+                 , realname       :: T.Text
+                 , typename       :: T.Text
+                 , gpc            :: T.Text
                  } deriving (Eq, Show)
 
-type UserStore = M.Map Chatroom [User]
+type UserStore      = M.Map Chatroom [User]
 
-type Privclasses = M.Map T.Text Int
+type Privclasses    = M.Map T.Text Int
 type PrivclassStore = M.Map Chatroom Privclasses
-type Privclass = (T.Text, Int)
+type Privclass      = (T.Text, Int)
 
-type Title = T.Text
-type TitleStore = M.Map Chatroom Title
+type Title          = T.Text
+type TitleStore     = M.Map Chatroom Title
 
-data Kevin = Kevin { damn :: Handle
-                   , irc :: Handle
-                   , dChan :: Chan T.Text
-                   , iChan :: Chan T.Text
+data Kevin = Kevin { damn           :: Handle
+                   , irc            :: Handle
+                   , dChan          :: Chan T.Text
+                   , iChan          :: Chan T.Text
                    , _kevinSettings :: Settings
-                   , _users :: UserStore
-                   , _privclasses :: PrivclassStore
-                   , _titles :: TitleStore
-                   , _joining :: [T.Text]
-                   , _loggedIn :: Bool
-                   , logger :: Chan String
+                   , _users         :: UserStore
+                   , _privclasses   :: PrivclassStore
+                   , _titles        :: TitleStore
+                   , _joining       :: [T.Text]
+                   , _loggedIn      :: Bool
+                   , logger         :: Chan String
                    }
 
 makeLenses ''Kevin
@@ -78,11 +78,10 @@ instance HasSettings Kevin where
 type KevinS = StateT Kevin STM
 
 kevin :: KevinS a -> KevinIO a
-kevin m = ask >>= \v -> liftIO $ atomically $ do
-    s <- readTVar v
-    (a, t) <- runStateT m s
-    writeTVar v t
-    return a
+kevin m = ask >>= \v -> liftIO $ atomically $ do s <- readTVar v
+                                                 (a, t) <- runStateT m s
+                                                 writeTVar v t
+                                                 return a
 
 type KevinIO = ReaderT (TVar Kevin) IO
 

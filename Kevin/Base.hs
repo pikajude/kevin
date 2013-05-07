@@ -36,16 +36,15 @@ import System.IO as K
 import System.IO.Error
 
 runPrinter :: Chan T.Text -> Handle -> IO ()
-runPrinter ch h = void . forkIO . forever $ readChan ch >>=
-    T.hPutStr h . T.encodeUtf8
+runPrinter ch h = void . forkIO . forever $ readChan ch >>= T.hPutStr h . T.encodeUtf8
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
 
 class KevinServer a where
-    readClient, readServer :: a -> IO T.Text
-    writeServer :: a -> T.Text -> IO ()
-    writeClient :: a -> T.Text -> IO ()
+    readClient, readServer   :: a -> IO T.Text
+    writeServer              :: a -> T.Text -> IO ()
+    writeClient              :: a -> T.Text -> IO ()
     closeClient, closeServer :: a -> IO ()
 
 data KevinException = ParseFailure
@@ -59,24 +58,21 @@ _KevinException = exception
 -- actions
 
 hGetCharTimeout :: Handle -> Int -> IO Char
-hGetCharTimeout h t = do
-    hSetBuffering h NoBuffering
-    ready <- hWaitForInput h t
-    if ready
-        then hGetChar h
-        else throwIO $ mkIOError eofErrorType "read timeout" (Just h) Nothing
+hGetCharTimeout h t = do hSetBuffering h NoBuffering
+                         ready <- hWaitForInput h t
+                         if ready
+                            then hGetChar h
+                            else throwIO $ mkIOError eofErrorType "read timeout" (Just h) Nothing
 
 hGetSep :: Char -> Handle -> IO String
-hGetSep sep h = fix (\f -> do
-    ch <- hGetCharTimeout h 180000
-    if ch == sep
-        then return ""
-        else (ch:) <$> f)
+hGetSep sep h = fix (\f -> do ch <- hGetCharTimeout h 180000
+                              if ch == sep
+                                 then return ""
+                                 else (ch:) <$> f)
 
 instance KevinServer Kevin where
-    readClient k = do
-        line <- T.decodeUtf8 <$> T.hGetLine (irc k)
-        return $ T.init line
+    readClient k = do line <- T.decodeUtf8 <$> T.hGetLine (irc k)
+                      return $ T.init line
     readServer k = T.pack <$> hGetSep '\NUL' (damn k)
 
     writeClient k = writeChan (iChan k)
