@@ -18,7 +18,7 @@ Executable kevin
     Main-is:            Main.hs
 
     Default-language:   Haskell2010
-    
+
     Build-Depends:      attoparsec,
                         base == 4.*,
                         bytestring,
@@ -36,7 +36,7 @@ Executable kevin
                         time,
                         tls,
                         tls-extra
-                        
+
     Other-Modules:      Kevin,
                         Kevin.Base,
                         Kevin.Chatrooms,
@@ -54,6 +54,6 @@ Executable kevin
                         Kevin.Util.Tablump,
                         Kevin.Util.Token,
                         Kevin.Version
-                
+
     default-extensions: DeriveDataTypeable, ExistentialQuantification, FlexibleContexts, OverloadedStrings, ScopedTypeVariables, TemplateHaskell
     ghc-options:        -Wall -fno-warn-unused-do-bind -threaded
