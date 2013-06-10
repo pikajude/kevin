@@ -62,7 +62,7 @@ regexen = let ($$) = (,) in map (
         "&link\t(.+?)\t(.+?)\t&\t"                                     $$ \(x:y:_) -> printf "%s (%s)" x y,
         "&dev\t.+?\t(.+?)\t"                                           $$ head,
         "&avatar\t(.+?)\t.+?\t"                                        $$ \(x:_) -> printf ":icon%s:" x,
-        "&thumb\t.+?\t(.+?)\t.+?\t.+?\t.+?\t.+?\t.+?\t"                $$ head,
+        "&thumb\t.+?\t(.+?)\t.+?\t.+?\t.+?\t.+?\t"                     $$ \(x:_) -> printf "[thumb: %s]" x,
         "&img\t(.+?)\t(.*?)\t(.*?)\t"                                  $$ \(x:y:z:_) -> printf "<img src='%s' alt='%s' title='%s' />" x y z,
         "&iframe\t(.+?)\t(.*?)\t(.*?)\t"                               $$ \(x:y:z:_) -> printf "<iframe src='%s' width='%s' height='%s' />" x y z,
         "&acro\t(.+?)\t"                                               $$ \(x:_) -> printf "<acronym title='%s'>" x,
