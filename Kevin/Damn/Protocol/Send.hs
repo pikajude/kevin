@@ -76,13 +76,13 @@ sendJoin room = do roomname <- formatRoom room
 sendPart room = do roomname <- formatRoom room
                    sendPacket $ printf "part %s\n" [roomname]
 
-sendMsg room msg = do roomname <- formatRoom room
-                      sendPacket $ printf "send %s\n\nmsg main\n\n%s" [roomname, msg]
+sendMsg = sendNpMsg
 
 sendAction room msg = do roomname <- formatRoom room
                          sendPacket $ printf "send %s\n\naction main\n\n%s" [roomname, msg]
 
-sendNpMsg = undefined
+sendNpMsg room msg = do roomname <- formatRoom room
+                        sendPacket $ printf "send %s\n\nnpmsg main\n\n%s" [roomname, msg]
 
 sendPromote room us pc = do roomname <- formatRoom room
                             sendPacket $ printf "send %s\n\npromote %s%s" [roomname, us, maybeBody pc]
