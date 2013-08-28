@@ -11,7 +11,7 @@ import Kevin.Util.Logger
 import Prelude
 
 watchInterrupt :: [Handler IO (Maybe Kevin)]
-watchInterrupt = [ handler _AsyncException throw
+watchInterrupt = [ handler _AsyncException throwM
                  , handler_ id (return Nothing) ]
 
 mkKevin :: Socket -> IO (Maybe Kevin)

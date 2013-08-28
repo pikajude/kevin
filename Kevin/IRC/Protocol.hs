@@ -120,45 +120,45 @@ notice h str = do klogNow Blue ("client -> " ++ T.unpack asStr)
     where asStr = printf "NOTICE AUTH :%s" [str]
 
 getAuthInfo :: Handle -> Bool -> KevinState ()
-getAuthInfo handle = fix (\f authRetry -> do pkt <- io $ parsePacket <$> T.hGetLine handle
-                                             io $ klogNow Yellow $ "client <- " ++ T.unpack (readable pkt)
-                                             case pkt^.command of "PASS" -> do password .= pkt^.params._head
-                                                                               passed .= True
-                                                                  "NICK" -> do name .= pkt^.params._head
-                                                                               nicked .= True
-                                                                  "USER" -> usered .= True
-                                                                  _      -> io $ klogNow Red $ "invalid packet: " ++ show pkt
-                                             if authRetry
-                                                then checkToken handle
-                                                else do p <- use passed
-                                                        n <- use nicked
-                                                        u <- use usered
-                                                        if p && n && u
-                                                           then welcome handle
-                                                           else f False)
+getAuthInfo h = fix (\f authRetry -> do pkt <- io $ parsePacket <$> T.hGetLine h
+                                        io $ klogNow Yellow $ "client <- " ++ T.unpack (readable pkt)
+                                        case pkt^.command of "PASS" -> do password .= pkt^.params._head
+                                                                          passed .= True
+                                                             "NICK" -> do name .= pkt^.params._head
+                                                                          nicked .= True
+                                                             "USER" -> usered .= True
+                                                             _      -> io $ klogNow Red $ "invalid packet: " ++ show pkt
+                                        if authRetry
+                                           then checkToken h
+                                           else do p <- use passed
+                                                   n <- use nicked
+                                                   u <- use usered
+                                                   if p && n && u
+                                                      then welcome h
+                                                      else f False)
 
 welcome :: Handle -> KevinState ()
-welcome handle = do nick <- use name
-                    mapM_ (\x -> io $ do
-                        klogNow Blue ("client -> " ++ T.unpack x)
-                        T.hPutStr handle (x <> "\r\n")) [
-                            printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com" [hostname, nick, nick, nick],
-                            printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" [hostname, nick],
-                            printf ":%s 003 %s :This server was created Thu Apr 28 1994 at 05:30:00 EDT" [hostname, nick],
-                            printf ":%s 004 %s chat.deviantart.com dAmnServer0.3 qov i" [hostname, nick],
-                            printf ":%s 005 %s PREFIX=(qov)~@+" [hostname, nick],
-                            printf ":%s 375 %s :- chat.deviantart.com Message of the day -" [hostname, nick],
-                            printf ":%s 372 %s :- deviantART chat on IRC brought to you by kevin %s, created" [hostname, nick, versionStr],
-                            printf ":%s 372 %s :- and maintained by Joel Taylor <http://otte.rs>" [hostname, nick],
-                            printf ":%s 376 %s :End of MOTD command" [hostname, nick]]
-                    checkToken handle
+welcome h = do nick <- use name
+               mapM_ (\x -> io $ do
+                   klogNow Blue ("client -> " ++ T.unpack x)
+                   T.hPutStr h (x <> "\r\n")) [
+                       printf ":%s 001 %s :Welcome to dAmnServer %s!%s@chat.deviantart.com" [hostname, nick, nick, nick],
+                       printf ":%s 002 %s :Your host is chat.deviantart.com, running dAmnServer 0.3" [hostname, nick],
+                       printf ":%s 003 %s :This server was created Thu Apr 28 1994 at 05:30:00 EDT" [hostname, nick],
+                       printf ":%s 004 %s chat.deviantart.com dAmnServer0.3 qov i" [hostname, nick],
+                       printf ":%s 005 %s PREFIX=(qov)~@+" [hostname, nick],
+                       printf ":%s 375 %s :- chat.deviantart.com Message of the day -" [hostname, nick],
+                       printf ":%s 372 %s :- deviantART chat on IRC brought to you by kevin %s, created" [hostname, nick, versionStr],
+                       printf ":%s 372 %s :- and maintained by Joel Taylor <http://otte.rs>" [hostname, nick],
+                       printf ":%s 376 %s :End of MOTD command" [hostname, nick]]
+               checkToken h
     where hostname = "chat.deviantart.com"
 
 checkToken :: Handle -> KevinState ()
-checkToken handle = do s <- get
-                       io $ notice handle "Fetching token..."
-                       tok <- io $ getToken (s^.name) (s^.password)
-                       case tok of Just t  -> do authtoken .= t
-                                                 io $ notice handle "Successfully authenticated."
-                                   Nothing -> do io $ notice handle "Bad password, try again. (/quote pass yourpassword)"
-                                                 getAuthInfo handle True
+checkToken h = do s <- get
+                  io $ notice h "Fetching token..."
+                  tok <- io $ getToken (s^.name) (s^.password)
+                  case tok of Just t  -> do authtoken .= t
+                                            io $ notice h "Successfully authenticated."
+                              Nothing -> do io $ notice h "Bad password, try again. (/quote pass yourpassword)"
+                                            getAuthInfo h True

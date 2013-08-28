@@ -1,0 +1,20 @@
+[submodule "deps/primitive"]
+	path = deps/primitive
+	url = git://git.haskell.org/packages/primitive.git
+[submodule "deps/generic-derivin"]
+	path = deps/generic-derivin
+	url = https://github.com/dreixel/generic-deriving
+[submodule "deps/generic-deriving"]
+	path = deps/generic-deriving
+	url = https://github.com/dreixel/generic-deriving
+[submodule "deps/vector"]
+	path = deps/vector
+	url = git://git.haskell.org/packages/vector.git
+	branch = ghc-head
+[submodule "deps/lens"]
+	path = deps/lens
+	url = https://github.com/ekmett/lens.git
+[submodule "deps/HTTP"]
+	path = deps/HTTP
+	url = https://github.com/joelteon/HTTP.git
+	branch = ghc-head
