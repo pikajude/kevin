@@ -21,7 +21,7 @@ import Control.Exception
 import Control.Exception as K (IOException)
 import Control.Exception.Lens
 import Control.Lens as K
-import Control.Monad.CatchIO as K
+import Control.Monad.Catch as K
 import Control.Monad.Reader as K
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text as T

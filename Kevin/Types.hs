@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Kevin.Types (
     Kevin(Kevin, damn, irc, dChan, iChan, logger),
     KevinIO,
@@ -31,6 +33,7 @@ import Control.Monad.STM (STM, atomically)
 import Control.Monad.State
 import qualified Data.Map as M
 import qualified Data.Text as T
+import Data.Typeable
 import Kevin.Settings
 import System.IO
 
@@ -68,7 +71,9 @@ data Kevin = Kevin { damn           :: Handle
                    , _joining       :: [T.Text]
                    , _loggedIn      :: Bool
                    , logger         :: Chan String
-                   }
+                   } deriving Typeable
+
+deriving instance Typeable ReaderT
 
 makeLenses ''Kevin
 
