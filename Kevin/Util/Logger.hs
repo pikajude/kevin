@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Kevin.Util.Logger (
     klog,
     klog_,
