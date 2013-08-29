@@ -1,7 +1,9 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Kevin.IRC.Packet (
     Packet(..),
     prefix, command, params,
-    
+
     parsePacket,
     readable
 ) where

@@ -1,5 +1,11 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Kevin.Types (
     Kevin(Kevin, damn, irc, dChan, iChan, logger),
     KevinIO,
@@ -21,7 +27,7 @@ module Kevin.Types (
 
     -- other accessors
     settings,
-    
+
     if'
 ) where
 
@@ -73,8 +79,6 @@ data Kevin = Kevin { damn           :: Handle
                    , logger         :: Chan String
                    } deriving Typeable
 
-deriving instance Typeable ReaderT
-
 makeLenses ''Kevin
 
 instance HasSettings Kevin where
@@ -89,6 +93,13 @@ kevin m = ask >>= \v -> liftIO $ atomically $ do s <- readTVar v
                                                  return a
 
 type KevinIO = ReaderT (TVar Kevin) IO
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+deriving instance Typeable ReaderT
+#else
+instance Typeable1 (ReaderT (TVar Kevin) IO) where
+    typeOf1 _ = mkTyConApp (mkTyCon3 "kevin" "Kevin.Types" "KevinIO") []
+#endif
 
 use_ :: Getting a Kevin a -> KevinIO a
 use_ = gets_ . view
