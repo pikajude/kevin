@@ -9,6 +9,7 @@ Maintainer:       joel@otte.rs
 Build-Type:       Simple
 Cabal-Version:    >=1.10
 Category:         Utils
+Tested-With:      GHC == 7.4.2, GHC == 7.6.3, GHC == 7.7.20130828
 
 source-repository head
     type: git
