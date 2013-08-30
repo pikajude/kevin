@@ -1,5 +1,8 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Kevin.Protocol (kevinServer) where
 
+import Control.Exception (throwIO)
 import Control.Exception.Lens
 import Control.Monad.State
 import Data.Default
@@ -11,7 +14,7 @@ import Kevin.Util.Logger
 import Prelude
 
 watchInterrupt :: [Handler IO (Maybe Kevin)]
-watchInterrupt = [ handler _AsyncException throwM
+watchInterrupt = [ handler _AsyncException throwIO
                  , handler_ id (return Nothing) ]
 
 mkKevin :: Socket -> IO (Maybe Kevin)

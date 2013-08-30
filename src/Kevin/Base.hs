@@ -22,7 +22,7 @@ import Control.Concurrent.STM.TVar as K
 import Control.Exception
 import Control.Exception as K (IOException)
 import Control.Exception.Lens
-import Control.Lens as K
+import Control.Lens as K hiding (un)
 import Control.Monad.Catch as K
 import Control.Monad.Reader as K
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)

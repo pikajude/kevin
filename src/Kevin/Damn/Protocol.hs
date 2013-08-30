@@ -30,10 +30,11 @@ cleanup :: KevinIO ()
 cleanup = klog Blue "cleanup server"
 
 listen :: KevinIO ()
-listen = fix (\f -> flip catches errHandlers $ do k   <- get_
-                                                  pkt <- io $ parsePacket <$> readServer k
-                                                  respond pkt (view command pkt)
-                                                  f)
+listen = fix (\f -> flip catches errHandlers $ do
+                    k   <- get_
+                    pkt <- io $ parsePacket <$> readServer k
+                    respond pkt (view command pkt)
+                    f)
 
 -- main responder
 respond :: Packet -> T.Text -> KevinIO ()
@@ -193,6 +194,6 @@ mkUser room st p = User (p^.parameter._Just)
                         (g "gpc")
     where g s = p^.args.ix s
 
-errHandlers :: [Handler KevinIO ()]
+errHandlers :: [ Handler KevinIO () ]
 errHandlers = [ handler_ _KevinException $ klogError "Malformed communication from server"
               , handler _IOException (\e -> klogError $ "server: " ++ show e) ]
