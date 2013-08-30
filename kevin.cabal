@@ -28,7 +28,7 @@ Executable kevin
                         data-default,
                         exceptions,
                         HTTP >= 4000.2,
-                        lens >= 3.10,
+                        lens >= 3.10, -- necessary for the exceptions instances
                         mtl,
                         network,
                         regex-pcre-builtin,
