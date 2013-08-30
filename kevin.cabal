@@ -62,6 +62,6 @@ Executable kevin
                         Kevin.Util.Token,
                         Kevin.Version
 
-    ghc-options:        -Wall -Werror -fno-warn-unused-do-bind -threaded
+    ghc-options:        -Wall -fno-warn-unused-do-bind -threaded
 
     hs-source-dirs:     src
