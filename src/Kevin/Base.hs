@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Kevin.Base (
@@ -22,8 +23,12 @@ import Control.Concurrent.STM.TVar as K
 import Control.Exception
 import Control.Exception as K (IOException)
 import Control.Exception.Lens
-import Control.Lens as K hiding (un)
+import Control.Lens as K
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 import Control.Monad.Catch as K
+#else
+import Control.Monad.CatchIO as K
+#endif
 import Control.Monad.Reader as K
 import qualified Data.ByteString.Char8 as T (hGetLine, hPutStr)
 import qualified Data.Text as T
