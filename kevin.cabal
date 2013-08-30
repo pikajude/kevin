@@ -27,6 +27,7 @@ Executable kevin
                         cprng-aes,
                         data-default,
                         HTTP >= 4000.2,
+                        lens >= 3.9,
                         mtl,
                         network,
                         regex-pcre-builtin,
@@ -41,8 +42,7 @@ Executable kevin
                         lens >= 3.10
 
     if impl(ghc<7.7)
-      Build-Depends:    MonadCatchIO-transformers,
-                        lens >= 3.9
+      Build-Depends:    MonadCatchIO-transformers
 
     Other-Modules:      Kevin,
                         Kevin.Base,
