@@ -38,8 +38,7 @@ Executable kevin
 
     if impl(ghc>=7.7)
       Build-Depends:    exceptions,
-                        lens >= 3.10,
-                        primitive < 0.5
+                        lens >= 3.10
 
     if impl(ghc<7.7)
       Build-Depends:    MonadCatchIO-transformers,
@@ -63,6 +62,6 @@ Executable kevin
                         Kevin.Util.Token,
                         Kevin.Version
 
-    ghc-options:        -Wall -fno-warn-unused-do-bind -threaded
+    ghc-options:        -Wall -Werror -fno-warn-unused-do-bind -threaded
 
     hs-source-dirs:     src
