@@ -13,7 +13,7 @@ data Settings = Settings { _name      :: Text
                          , _passed    :: Bool
                          , _nicked    :: Bool
                          , _usered    :: Bool
-                         } deriving (Show)
+                         } deriving Show
 
 makeClassy ''Settings
 

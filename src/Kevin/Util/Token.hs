@@ -4,18 +4,18 @@ module Kevin.Util.Token (
     getToken
 ) where
 
-import Control.Arrow
-import Crypto.Random.AESCtr (makeSystem)
+import           Control.Arrow
+import           Crypto.Random.AESCtr             (makeSystem)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List
-import Data.Monoid
+import           Data.List
+import           Data.Monoid
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
-import Network.HTTP.Base
-import Network.TLS
-import Network.TLS.Extra
-import Text.Printf
+import           Data.Text.Encoding               (decodeUtf8)
+import           Network.HTTP.Base
+import           Network.TLS
+import           Network.TLS.Extra
+import           Text.Printf
 
 recvUntil :: TLSCtx -> B.ByteString -> IO B.ByteString
 recvUntil ctx str = do
