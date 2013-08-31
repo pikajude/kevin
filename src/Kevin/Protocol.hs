@@ -2,6 +2,7 @@
 
 module Kevin.Protocol (kevinServer) where
 
+import           Control.Concurrent
 import           Control.Exception        (throwIO)
 import           Control.Exception.Lens
 import           Control.Monad.State
@@ -28,10 +29,14 @@ mkKevin sock = flip catches watchInterrupt . withSocketsDo
          logChan <- newChan
          damnChan <- newChan
          ircChan <- newChan
+         smv <- newEmptyMVar
+         cmv <- newEmptyMVar
          return . Just $ Kevin damnSock
                                client
                                damnChan
                                ircChan
+                               smv
+                               cmv
                                s
                                mempty
                                mempty
@@ -58,6 +63,8 @@ listen k = do
     runLogger (logger k)
     runPrinter (dChan k) (damn k)
     runPrinter (iChan k) (irc k)
-    forkIO . void $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeClient k)) S.listen) mvar
-    forkIO . void $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeServer k)) C.listen) mvar
+    sId <- forkIO . void $ runReaderT (bracket_ S.initialize (S.cleanup >> io (closeServer k)) S.listen) mvar
+    cId <- forkIO . void $ runReaderT (bracket_ (return ()) (C.cleanup >> io (closeClient k)) C.listen) mvar
+    putMVar (serverMv k) sId
+    putMVar (clientMv k) cId
     return ()

@@ -9,6 +9,7 @@ module Kevin.IRC.Protocol (
 
 import           Control.Applicative           ((<$>))
 import           Control.Arrow
+import           Control.Concurrent
 import           Control.Exception.Lens
 import           Control.Monad.State
 import           Data.Function                 (on)
@@ -29,7 +30,11 @@ import           Kevin.Version
 type KevinState = StateT Settings IO
 
 cleanup :: KevinIO ()
-cleanup = klog Green "cleanup client"
+cleanup = do
+    klog Green "cleanup client"
+    sm <- gets_ serverMv
+    tid <- liftIO $ readMVar sm
+    liftIO $ killThread tid
 
 listen :: KevinIO ()
 listen = fix $ \f -> flip catches errHandlers $ do
@@ -101,7 +106,7 @@ respond pkt "KICK" =
                        then Just $ last p
                        else Nothing)
 
-respond _ "QUIT" = klogError "client quit" >> undefined
+respond _ "QUIT" = throw ClientClosed
 
 respond pkt "ADMIN" = D.sendAdmin p $ T.intercalate " " ps
     where (p:ps) = pkt^.params
@@ -121,7 +126,7 @@ unmask y = case T.split (`elem` "@!") y of
 
 errHandlers :: [Handler KevinIO ()]
 errHandlers = [ handler _KevinException $ klogError . show
-              , handler _IOException (\e -> klogError $ "client: " ++ show e) ]
+              , handler _IOException (\e -> klogError ("client: " ++ show e)) ]
 
 -- * Authentication-getting function
 notice :: Handle -> T.Text -> IO ()

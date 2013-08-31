@@ -56,13 +56,17 @@ class KevinServer a where
 
 data KevinException = ServerParseFailure String T.Text
                     | ClientParseFailure String T.Text
+                    | ServerClosed
+                    | ClientClosed
                     deriving Typeable
 
 instance Show KevinException where
     show (ServerParseFailure reason input) =
-        P.printf "Parse failure (%s) on packet from server:\n%s" reason (T.unpack input)
+        P.printf "Parse failure (%s) on packet from server:\n%s" reason (show input)
     show (ClientParseFailure reason input) =
-        P.printf "Parse failure (%s) on packet from client:\n%s" reason (T.unpack input)
+        P.printf "Parse failure (%s) on packet from client:\n%s" reason (show input)
+    show ServerClosed = "Server closed connection"
+    show ClientClosed = "Client closed connection"
 
 instance Exception KevinException
 

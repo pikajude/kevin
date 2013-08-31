@@ -8,6 +8,7 @@ module Kevin.Damn.Protocol (
 ) where
 
 import           Control.Applicative          ((<$>), (<$))
+import           Control.Concurrent
 import           Control.Exception as E       (throw)
 import           Control.Exception.Lens
 import           Data.List                    (delete, nub, minimumBy)
@@ -38,7 +39,7 @@ parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . head) . T.splitOn "
                  . T.splitOn "\n"
 
 parse :: T.Text -> Packet
-parse m = case D.parse m of
+parse m = case D.parse (fromMaybe m $ T.stripSuffix "\n" m) of
               Left err -> E.throw $ ServerParseFailure err m
               Right x -> x
 
@@ -46,7 +47,11 @@ initialize :: KevinIO ()
 initialize = sendHandshake
 
 cleanup :: KevinIO ()
-cleanup = klog Blue "cleanup server"
+cleanup = do
+    klog Blue "cleanup server"
+    k <- gets_ clientMv
+    tid <- liftIO $ readMVar k
+    liftIO $ killThread tid
 
 listen :: KevinIO ()
 listen = fix (\f -> flip catches errHandlers $ do
@@ -245,4 +250,4 @@ mkUser room st p = User {
 
 errHandlers :: [ Handler KevinIO () ]
 errHandlers = [ handler _KevinException $ klogError . show
-              , handler _IOException (\e -> klogError $ "server: " ++ show e) ]
+              , handler _IOException (\e -> klogError ("server: " ++ show e) >> E.throw e) ]
