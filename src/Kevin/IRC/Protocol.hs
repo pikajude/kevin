@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Kevin.IRC.Protocol (
@@ -26,6 +27,11 @@ import           Kevin.Util.Entity
 import           Kevin.Util.Logger
 import           Kevin.Util.Token
 import           Kevin.Version
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+throw :: KevinException -> KevinIO a
+throw = throwM
+#endif
 
 type KevinState = StateT Settings IO
 
