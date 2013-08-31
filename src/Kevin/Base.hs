@@ -26,8 +26,6 @@ import           Control.Exception.Lens
 import           Control.Lens as K
 #if MIN_VERSION_lens(3,10,0)
                                            hiding (un)
-#endif
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 import           Control.Monad.Catch as K
 #else
 import           Control.Monad.CatchIO as K
