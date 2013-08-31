@@ -22,8 +22,11 @@ getPort (_:xs)     = getPort xs
 getPort []         = defaultPort
 
 main :: IO ()
-main = do args <- getArgs
-          case getOpt Permute opts args of (flags, _, [])     -> case flags of f | Help `elem` f    -> putStrLn $ usageInfo header opts
-                                                                                 | Version `elem` f -> putStrLn $ "kevin version " ++ showVersion version
-                                                                                 | otherwise        -> kevinServer $ getPort flags
-                                           (_, _, msgs@(_:_)) -> putStrLn $ concat msgs ++ usageInfo header opts
+main = do
+    args <- getArgs
+    case getOpt Permute opts args of
+        (flags, _, []) -> case flags of
+                              f | Help `elem` f    -> putStrLn $ usageInfo header opts
+                                | Version `elem` f -> putStrLn $ "kevin version " ++ showVersion version
+                                | otherwise        -> kevinServer $ getPort flags
+        (_, _, msgs@(_:_)) -> putStrLn $ concat msgs ++ usageInfo header opts

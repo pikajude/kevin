@@ -4,13 +4,13 @@ module Kevin.Util.Tablump (
     tablumpDecode
 ) where
 
-import Control.Arrow
-import Control.Monad.Fix
+import           Control.Arrow
+import           Control.Monad.Fix
 import qualified Data.Text as T
-import System.IO.Unsafe
-import Text.Printf
-import Text.Regex.PCRE
-import Text.Regex.PCRE.String
+import           System.IO.Unsafe
+import           Text.Printf
+import           Text.Regex.PCRE
+import           Text.Regex.PCRE.String
 
 fromRight :: (Show a) => Either a b -> b
 fromRight (Left x)  = error $ "fromRight on Left " ++ show x
@@ -19,8 +19,9 @@ fromRight (Right a) = a
 {-# NOINLINE regexReplace #-}
 regexReplace :: Regex -> ([String] -> String) -> String -> String
 regexReplace find replace = fix (\f str ->
-    case fromRight . unsafePerformIO $ regexec find str of Just (bef, _, af, matches) -> concat [bef, replace matches, f af]
-                                                           Nothing                    -> str)
+    case fromRight . unsafePerformIO $ regexec find str of
+        Just (bef, _, af, matches) -> concat [bef, replace matches, f af]
+        Nothing                    -> str)
 
 {-# NOINLINE regexen #-}
 regexen :: [(Regex, [String] -> String)]

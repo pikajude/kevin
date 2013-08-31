@@ -11,11 +11,11 @@ module Kevin.Util.Logger (
     printf
 ) where
 
-import Control.Concurrent
-import Control.Monad.State
-import Data.Char (isSpace)
+import           Control.Concurrent
+import           Control.Monad.State
+import           Data.Char           (isSpace)
 import qualified Data.Text as T
-import Kevin.Types
+import           Kevin.Types
 
 data Color = Red | Blue | Green | Cyan | Magenta | Yellow | Gray
 
@@ -40,9 +40,10 @@ printf :: T.Text -> [T.Text] -> T.Text
 printf str reps = T.concat $ interleave (T.splitOn "%s" str) reps
 
 render :: Color -> String -> String
-render col str = "\027[" ++ show (colorAsNum col)
-                         ++ "m" ++ rtrimmed
-                         ++ "\027[0m"
+render col str = "\027["
+              ++ show (colorAsNum col)
+              ++ "m" ++ rtrimmed
+              ++ "\027[0m"
     where
         rtrimmed = reverse . dropWhile (\x -> isSpace x || x == '\x0') . reverse $ str
 

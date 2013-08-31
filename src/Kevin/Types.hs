@@ -32,17 +32,17 @@ module Kevin.Types (
     if'
 ) where
 
-import Control.Concurrent
-import Control.Concurrent.STM.TVar
-import Control.Lens
-import Control.Monad.Reader
-import Control.Monad.STM (STM, atomically)
-import Control.Monad.State
+import           Control.Concurrent
+import           Control.Concurrent.STM.TVar
+import           Control.Lens
+import           Control.Monad.Reader
+import           Control.Monad.STM           (STM, atomically)
+import           Control.Monad.State
 import qualified Data.Map as M
 import qualified Data.Text as T
-import Data.Typeable
-import Kevin.Settings
-import System.IO
+import           Data.Typeable
+import           Kevin.Settings
+import           System.IO
 
 if' :: Bool -> a -> a -> a
 if' x y z = if x then y else z
@@ -88,10 +88,11 @@ instance HasSettings Kevin where
 type KevinS = StateT Kevin STM
 
 kevin :: KevinS a -> KevinIO a
-kevin m = ask >>= \v -> liftIO $ atomically $ do s <- readTVar v
-                                                 (a, t) <- runStateT m s
-                                                 writeTVar v t
-                                                 return a
+kevin m = ask >>= \v -> liftIO $ atomically $ do
+    s <- readTVar v
+    (a, t) <- runStateT m s
+    writeTVar v t
+    return a
 
 type KevinIO = ReaderT (TVar Kevin) IO
 
