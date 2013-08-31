@@ -8,7 +8,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Kevin.Types (
-    Kevin(Kevin, damn, irc, dChan, iChan, logger),
+    Kevin(Kevin, damn, irc, dChan, iChan, logger, clientMv, serverMv),
     KevinIO,
     KevinS,
     Privclass,
@@ -71,6 +71,8 @@ data Kevin = Kevin { damn           :: Handle
                    , irc            :: Handle
                    , dChan          :: Chan T.Text
                    , iChan          :: Chan T.Text
+                   , serverMv       :: MVar ThreadId
+                   , clientMv       :: MVar ThreadId
                    , _kevinSettings :: Settings
                    , _users         :: UserStore
                    , _privclasses   :: PrivclassStore
