@@ -1,3 +1,5 @@
+[![Build status](https://secure.travis-ci.org/joelteon/kevin.png)](http://travis-ci.org/joelteon/kevin)
+
 Kevin
 =========
 * Use `kevin -h` for a list of runtime options, e.g. running Kevin on a different port.
