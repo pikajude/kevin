@@ -1,4 +1,4 @@
 language: haskell
 
 install:
-  - cabal install --only-dependencies --enable-tests --force-reinstalls --constraint="template-haskell 2.7.0.0"
+  - cabal install --only-dependencies --enable-tests --force-reinstalls --constraint="template-haskell == 2.7.0.0"
