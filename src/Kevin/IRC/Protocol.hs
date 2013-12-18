@@ -28,7 +28,7 @@ import           Kevin.Util.Logger
 import           Kevin.Util.Token
 import           Kevin.Version
 
-#if MIN_VERSION_lens(3,10,0)
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 throw :: KevinException -> KevinIO a
 throw = throwM
 #endif

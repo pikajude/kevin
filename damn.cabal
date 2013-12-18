@@ -1,4 +1,4 @@
-Name:             kevin
+Name:             damn
 Version:          0.11.0
 Synopsis:         a dAmn ↔ IRC proxy
 Description:      a dAmn ↔ IRC proxy
@@ -13,9 +13,9 @@ Tested-With:      GHC == 7.4.2, GHC == 7.6.3, GHC == 7.7.20130828
 
 source-repository head
     type: git
-    location: git://github.com/joelteon/kevin.git
+    location: git://github.com/joelteon/damn.git
 
-Executable kevin
+Executable damn
     Main-is:            Main.hs
 
     Default-language:   Haskell2010
