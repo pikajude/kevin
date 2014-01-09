@@ -1,34 +1,32 @@
-Name:             damn
-Version:          0.11.0
-Synopsis:         a dAmn ↔ IRC proxy
-Description:      a dAmn ↔ IRC proxy
-License:          GPL
-License-file:     LICENSE
-Author:           Joel Taylor
-Maintainer:       me@joelt.io
-Build-Type:       Simple
-Cabal-Version:    >=1.10
-Category:         Utils
-Tested-With:      GHC == 7.4.2, GHC == 7.6.3, GHC == 7.7.20130828
+name:             damn
+version:          0.11.0
+synopsis:         a dAmn ↔ IRC proxy
+description:      a dAmn ↔ IRC proxy
+license:          GPL
+license-file:     LICENSE
+author:           Joel Taylor
+maintainer:       me@joelt.io
+build-Type:       Simple
+cabal-Version:    >=1.10
+category:         Utils
 
 source-repository head
     type: git
     location: git://github.com/joelteon/damn.git
 
-Executable damn
-    Main-is:            Main.hs
-
-    Default-language:   Haskell2010
-
-    Build-Depends:      attoparsec,
+executable damn
+    main-is:            Main.hs
+    default-language:   Haskell2010
+    build-depends:      attoparsec,
                         base == 4.*,
                         bytestring,
                         containers,
                         cprng-aes,
                         damnpacket,
                         data-default,
-                        HTTP >= 4000.2,
-                        lens >= 3.9,
+                        HTTP,
+                        lens >= 3.10,
+                        MonadCatchIO-transformers,
                         mtl,
                         network,
                         regex-pcre-builtin,
@@ -37,15 +35,7 @@ Executable damn
                         time,
                         tls,
                         tls-extra
-
-    if impl(ghc>=7.7)
-      Build-Depends:    exceptions,
-                        lens >= 3.10
-
-    if impl(ghc<7.7)
-      Build-Depends:    MonadCatchIO-transformers
-
-    Other-Modules:      Kevin,
+    other-modules:      Kevin,
                         Kevin.Base,
                         Kevin.Chatrooms,
                         Kevin.Damn.Protocol,
@@ -61,7 +51,5 @@ Executable damn
                         Kevin.Util.Tablump,
                         Kevin.Util.Token,
                         Kevin.Version
-
-    ghc-options:        -Wall -fno-warn-unused-do-bind -threaded
-
+    ghc-options:        -Wall -fno-warn-unused-do-bind -threaded -O2
     hs-source-dirs:     src
