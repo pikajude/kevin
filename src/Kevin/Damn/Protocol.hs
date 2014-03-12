@@ -13,7 +13,7 @@ import           Control.Concurrent
 import           Control.Exception as E       (throw)
 import           Control.Exception.Lens
 import           Data.List                    (delete, nub, minimumBy)
-import           Data.Maybe                   (fromMaybe)
+import           Data.Maybe                   (fromMaybe, isNothing)
 import           Data.Monoid
 import           Data.Ord                     (comparing)
 import qualified Data.Text as T
@@ -30,7 +30,7 @@ import qualified Text.Damn.Packet as D        (parse)
 import           Text.Trifecta.Result
 
 okay :: Packet -> Bool
-okay p = let e = pktArgs p ^. at "e" in e == Nothing || e == Just "ok"
+okay p = let e = pktArgs p ^. at "e" in isNothing e || e == Just "ok"
 
 notNull_ :: Prism' T.Text T.Text
 notNull_ = prism' id $ toMaybe (not . T.null)
@@ -243,7 +243,7 @@ mkUser :: Chatroom -> PrivclassStore -> Packet -> User
 mkUser room st p = User {
               username       = p ^?! pktParameterL . _Just
             , privclass      = g "pc"
-            , privclassLevel = fromMaybe 0 $ st ^. at room >>= (view (at $ g "pc"))
+            , privclassLevel = fromMaybe 0 $ st ^. at room >>= view (at $ g "pc")
             , symbol         = g "symbol"
             , realname       = entityDecode $ g "realname"
             , typename       = g "typename"
