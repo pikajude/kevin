@@ -11,11 +11,13 @@ import           Control.Applicative          ((<$>), (<$))
 import           Control.Concurrent
 import           Control.Exception as E       (throw)
 import           Control.Exception.Lens
+import           Data.ByteString              (ByteString)
 import           Data.List                    (delete, nub, minimumBy)
 import           Data.Maybe                   (fromMaybe)
 import           Data.Monoid
 import           Data.Ord                     (comparing)
 import qualified Data.Text as T
+import           Data.Text.Encoding           (decodeUtf8, encodeUtf8)
 import           Data.Time.Clock.POSIX        (getPOSIXTime)
 import           Kevin.Base
 import           Kevin.Damn.Protocol.Send
@@ -25,6 +27,7 @@ import           Kevin.Util.Logger
 import           Kevin.Util.Tablump
 import           Text.Damn.Packet hiding      (parse)
 import qualified Text.Damn.Packet as D        (parse)
+import           Text.Trifecta.Result
 
 okay :: Packet -> Bool
 okay p = let e = pktArgs p ^. at "e" in e == Nothing || e == Just "ok"
@@ -39,9 +42,9 @@ parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . head) . T.splitOn "
                  . T.splitOn "\n"
 
 parse :: T.Text -> Packet
-parse m = case D.parse (fromMaybe m $ T.stripSuffix "\n" m) of
-              Left err -> E.throw $ ServerParseFailure err m
-              Right x -> x
+parse m = case D.parse $ encodeUtf8 (fromMaybe m $ T.stripSuffix "\n" m) of
+              Failure err -> E.throw $ ServerParseFailure (show err) m
+              Success x -> x
 
 initialize :: KevinIO ()
 initialize = sendHandshake
@@ -96,22 +99,22 @@ respond pkt "part" = do
 respond pkt "property" = do
     roomname <- deformatRoom $ pktParameter pkt ^. _Just
     case pktArgs pkt ^. ix "p" of
-        "privclasses" -> setPrivclasses roomname . parsePrivclasses $ pktBody pkt ^. _Just
+        "privclasses" -> setPrivclasses roomname . parsePrivclasses $ pktBody pkt ^. _Just . to decodeUtf8
 
         "topic" -> do
             uname <- use_ name
             let setter = fromMaybe uname $ pktArgs pkt ^. at "by"
-                topic = T.replace "\n" " - " . entityDecode . tablumpDecode $ pktBody pkt ^. _Just
+                topic = T.replace "\n" " - " . entityDecode . tablumpDecode $ pktBody pkt ^. _Just . to decodeUtf8
                 time = pktArgs pkt ^. ix "ts"
             I.sendTopic uname roomname setter topic time
 
-        "title" -> setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode $ pktBody pkt ^. _Just)
+        "title" -> setTitle roomname (T.replace "\n" " - " . entityDecode . tablumpDecode $ pktBody pkt ^. _Just . to decodeUtf8)
 
         "members" -> do
             k <- get_
-            let members =map (mkUser roomname (k^.privclasses) . parse)
+            let members = map (mkUser roomname (k^.privclasses) . parse)
                         . init . T.splitOn "\n\n"
-                        $ pktBody pkt ^. _Just
+                        $ pktBody pkt ^. _Just . to decodeUtf8
                 pc      = privclass . head . filter (\x -> username x == k^.name) $ members
                 n       = nub members
             setUsers roomname members
@@ -126,7 +129,7 @@ respond pkt "property" = do
             curtime <- io $ floor <$> getPOSIXTime
             let fixedPacket = parse . T.init
                             . T.replace "\n\nusericon" "\nusericon"
-                            . render $ pkt
+                            . decodeUtf8 . render $ pkt
                 uname = T.drop 6 $ pktParameter pkt ^. _Just
                 rn    = pktArgs fixedPacket ^. ix "realname"
                 conns :: [(Int, Int, [T.Text])]
@@ -134,8 +137,8 @@ respond pkt "property" = do
                             let x = parse $ "conn" <> pk
                              in ( read (T.unpack $ pktArgs x ^. ix "online") :: Int
                                 , read (T.unpack $ pktArgs x ^. ix "idle"  ) :: Int
-                                , map (T.drop 8) . filter (not . T.null) . T.splitOn "\n\n" $ pktBody x ^. _Just
-                                )) . tail . T.splitOn "conn" $ pktBody fixedPacket ^. _Just
+                                , map (T.drop 8) . filter (not . T.null) . T.splitOn "\n\n" $ pktBody x ^. _Just . to decodeUtf8
+                                )) . tail . T.splitOn "conn" $ pktBody fixedPacket ^. _Just . to decodeUtf8
                 allRooms            = nub $ conns >>= (\(_,_,c) -> c)
                 (onlinespan,idle,_) = minimumBy (comparing (view _1)) conns
                 signon              = curtime - onlinespan
@@ -168,13 +171,13 @@ respond spk "recv" = deformatRoom (pktParameter spk ^. _Just) >>= \roomname ->
 
         "msg" -> do
             let uname = arg "from"
-                msg   = pktBody pkt ^. _Just
+                msg   = pktBody pkt ^. _Just . to decodeUtf8
             un <- use_ name
             unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
 
         "action" -> do
             let uname = arg "from"
-                msg   = pktBody pkt ^. _Just
+                msg   = pktBody pkt ^. _Just . to decodeUtf8
             un <- use_ name
             unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
 
@@ -195,7 +198,7 @@ respond spk "recv" = deformatRoom (pktParameter spk ^. _Just) >>= \roomname ->
         "kicked" -> do
             let uname = pktParameter pkt ^. _Just
             removeUserAll roomname uname
-            I.sendKick uname (arg "by") roomname $ pktBody pkt ^. traverse ^? notNull_
+            I.sendKick uname (arg "by") roomname $ pktBody pkt ^. traverse . to decodeUtf8 ^? notNull_
 
         "admin" -> case pktParameter pkt ^. _Just of
                        "create"    -> I.sendRoomNotice roomname $
@@ -213,21 +216,21 @@ respond spk "recv" = deformatRoom (pktParameter spk ^. _Just) >>= \roomname ->
                        "remove"    -> I.sendRoomNotice roomname $
                            T.concat [ "Privclass", arg "name", " removed by ", arg "by" ]
                        "show"      -> mapM_ (I.sendRoomNotice roomname)
-                                    . T.splitOn "\n" $ pktBody pkt ^. _Just
+                                    . T.splitOn "\n" $ pktBody pkt ^. _Just . to decodeUtf8
                        "privclass" -> I.sendRoomNotice roomname $ "Admin error: " <> arg "e"
                        q           -> klogError $ "Unknown admin packet type " ++ show q
 
         x -> klogError $ "Unknown packet type " ++ show x
 
     where pkt         = pktSubpacket' spk ^?! _Just
-          modifiedPkt = parse (T.replace "\n\npc" "\npc" $ render pkt)
+          modifiedPkt = pkt
           arg s       = pktArgs pkt ^. ix s
 
 respond pkt "kicked" = do
     roomname <- deformatRoom $ pktParameter pkt ^. _Just
     uname <- use_ name
     removeRoom roomname
-    I.sendKick uname (pktArgs pkt ^. ix "by") roomname $ pktBody pkt ^. traverse ^? notNull_
+    I.sendKick uname (pktArgs pkt ^. ix "by") roomname $ pktBody pkt ^. traverse . to decodeUtf8 ^? notNull_
 
 respond pkt "send" = I.sendNotice $ "Send error: " <> pkt ^. pktArgsL . ix "e"
 

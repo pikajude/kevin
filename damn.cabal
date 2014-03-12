@@ -34,7 +34,8 @@ executable damn
                         text,
                         time,
                         tls,
-                        tls-extra
+                        tls-extra,
+                        trifecta
     other-modules:      Kevin,
                         Kevin.Base,
                         Kevin.Chatrooms,
