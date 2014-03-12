@@ -22,7 +22,7 @@ executable damn
                         bytestring,
                         containers,
                         cprng-aes,
-                        damnpacket,
+                        damnpacket >= 0.5,
                         data-default,
                         exceptions,
                         HTTP,
