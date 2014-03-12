@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Kevin.Damn.Protocol (
@@ -9,7 +10,7 @@ module Kevin.Damn.Protocol (
 
 import           Control.Applicative          ((<$>), (<$))
 import           Control.Concurrent
-import           Control.Exception as E       (throw)
+import           Control.Exception as E       (SomeException, throw)
 import           Control.Exception.Lens
 import           Data.ByteString              (ByteString)
 import           Data.List                    (delete, nub, minimumBy)
@@ -19,6 +20,7 @@ import           Data.Ord                     (comparing)
 import qualified Data.Text as T
 import           Data.Text.Encoding           (decodeUtf8, encodeUtf8)
 import           Data.Time.Clock.POSIX        (getPOSIXTime)
+import           Data.Typeable
 import           Kevin.Base
 import           Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
@@ -251,6 +253,5 @@ mkUser room st p = User {
             }
     where g s = p ^. pktArgsL . ix s
 
-errHandlers :: [ Handler KevinIO () ]
 errHandlers = [ handler _KevinException $ klogError . show
               , handler _IOException (\e -> klogError ("server: " ++ show e) >> E.throw e) ]

@@ -112,7 +112,7 @@ respond pkt "KICK" =
                        then Just $ last p
                        else Nothing)
 
-respond _ "QUIT" = throw ClientClosed
+respond _ "QUIT" = throwM ClientClosed
 
 respond pkt "ADMIN" = D.sendAdmin p $ T.intercalate " " ps
     where (p:ps) = pkt^.params
