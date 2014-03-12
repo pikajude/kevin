@@ -10,9 +10,8 @@ module Kevin.Damn.Protocol (
 
 import           Control.Applicative          ((<$>), (<$))
 import           Control.Concurrent
-import           Control.Exception as E       (SomeException, throw)
+import           Control.Exception as E       (throw)
 import           Control.Exception.Lens
-import           Data.ByteString              (ByteString)
 import           Data.List                    (delete, nub, minimumBy)
 import           Data.Maybe                   (fromMaybe)
 import           Data.Monoid
@@ -20,7 +19,6 @@ import           Data.Ord                     (comparing)
 import qualified Data.Text as T
 import           Data.Text.Encoding           (decodeUtf8, encodeUtf8)
 import           Data.Time.Clock.POSIX        (getPOSIXTime)
-import           Data.Typeable
 import           Kevin.Base
 import           Kevin.Damn.Protocol.Send
 import qualified Kevin.IRC.Protocol.Send as I
@@ -45,7 +43,7 @@ parsePrivclasses = map (liftM2 (,) (!! 1) (read . T.unpack . head) . T.splitOn "
 
 parse :: T.Text -> Packet
 parse m = case D.parse $ encodeUtf8 (fromMaybe m $ T.stripSuffix "\n" m) of
-              Failure err -> E.throw $ ServerParseFailure (show err) m
+              Failure err_ -> E.throw $ ServerParseFailure (show err_) m
               Success x -> x
 
 initialize :: KevinIO ()
@@ -174,14 +172,14 @@ respond spk "recv" = deformatRoom (pktParameter spk ^. _Just) >>= \roomname ->
         "msg" -> do
             let uname = arg "from"
                 msg   = pktBody pkt ^. _Just . to decodeUtf8
-            un <- use_ name
-            unless (un == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
+            un_ <- use_ name
+            unless (un_ == uname) $ I.sendChanMsg uname roomname (entityDecode $ tablumpDecode msg)
 
         "action" -> do
             let uname = arg "from"
                 msg   = pktBody pkt ^. _Just . to decodeUtf8
-            un <- use_ name
-            unless (un == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
+            un_ <- use_ name
+            unless (un_ == uname) $ I.sendChanAction uname roomname (entityDecode $ tablumpDecode msg)
 
         "privchg" -> do
             let user  = pktParameter pkt ^. _Just
@@ -253,5 +251,6 @@ mkUser room st p = User {
             }
     where g s = p ^. pktArgsL . ix s
 
+errHandlers :: [Handler KevinIO ()]
 errHandlers = [ handler _KevinException $ klogError . show
               , handler _IOException (\e -> klogError ("server: " ++ show e) >> E.throw e) ]

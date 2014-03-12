@@ -52,5 +52,5 @@ executable damn
                         Kevin.Util.Tablump,
                         Kevin.Util.Token,
                         Kevin.Version
-    ghc-options:        -Wall -fno-warn-unused-do-bind -threaded -O2
+    ghc-options:        -Wall -Werror -fno-warn-unused-do-bind -threaded -O2
     hs-source-dirs:     src
